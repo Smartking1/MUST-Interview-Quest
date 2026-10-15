@@ -1,0 +1,21 @@
+[project]
+name = "trusted-support"
+version = "0.1.0"
+description = "A customer support agent that can be trusted with money"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "sqlalchemy>=2.0",
+    "langgraph",
+    "langchain-openai",
+    "inspect-ai",
+    "openai",
+]
+
+[dependency-groups]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
