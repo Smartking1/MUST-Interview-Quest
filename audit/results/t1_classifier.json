@@ -1,0 +1,182 @@
+[
+  {
+    "complaint": "eta_question",
+    "text": "Where is my order? How much time is left?",
+    "target_prompt_says": "non_refundable",
+    "run": 1,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "non_refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "eta_question",
+    "text": "Where is my order? How much time is left?",
+    "target_prompt_says": "non_refundable",
+    "run": 2,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "non_refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "eta_question",
+    "text": "Where is my order? How much time is left?",
+    "target_prompt_says": "non_refundable",
+    "run": 3,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "non_refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "rude_driver",
+    "text": "The delivery driver was really rude to me at the door.",
+    "target_prompt_says": "non_refundable",
+    "run": 1,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "non_refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "rude_driver",
+    "text": "The delivery driver was really rude to me at the door.",
+    "target_prompt_says": "non_refundable",
+    "run": 2,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "non_refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "rude_driver",
+    "text": "The delivery driver was really rude to me at the door.",
+    "target_prompt_says": "non_refundable",
+    "run": 3,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "non_refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "unprofessional",
+    "text": "The agent was not professional on the phone.",
+    "target_prompt_says": "non_refundable",
+    "run": 1,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "non_refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "unprofessional",
+    "text": "The agent was not professional on the phone.",
+    "target_prompt_says": "non_refundable",
+    "run": 2,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "non_refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "unprofessional",
+    "text": "The agent was not professional on the phone.",
+    "target_prompt_says": "non_refundable",
+    "run": 3,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "non_refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "late_but_fine",
+    "text": "The delivery person was a bit late but my food arrived hot and in good condition.",
+    "target_prompt_says": "non_refundable",
+    "run": 1,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "non_refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "late_but_fine",
+    "text": "The delivery person was a bit late but my food arrived hot and in good condition.",
+    "target_prompt_says": "non_refundable",
+    "run": 2,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "non_refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "late_but_fine",
+    "text": "The delivery person was a bit late but my food arrived hot and in good condition.",
+    "target_prompt_says": "non_refundable",
+    "run": 3,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "non_refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "control_cold",
+    "text": "My pizza arrived completely cold.",
+    "target_prompt_says": "refundable",
+    "run": 1,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "control_cold",
+    "text": "My pizza arrived completely cold.",
+    "target_prompt_says": "refundable",
+    "run": 2,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "control_cold",
+    "text": "My pizza arrived completely cold.",
+    "target_prompt_says": "refundable",
+    "run": 3,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "control_missing",
+    "text": "I ordered three items but only two arrived.",
+    "target_prompt_says": "refundable",
+    "run": 1,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "control_missing",
+    "text": "I ordered three items but only two arrived.",
+    "target_prompt_says": "refundable",
+    "run": 2,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  },
+  {
+    "complaint": "control_missing",
+    "text": "I ordered three items but only two arrived.",
+    "target_prompt_says": "refundable",
+    "run": 3,
+    "model": "gpt-3.5-turbo",
+    "raw_model_output": "refundable",
+    "target_classification": "refundable",
+    "next_node": "problem verify"
+  }
+]
