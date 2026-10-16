@@ -109,3 +109,11 @@ Places where policy.md is silent or ambiguous, and how the engine reads them. Ea
 - **R8 auto-approval limit is ₦300,000** (was $200). Chosen by AI to keep the seed's boundaries: HM-1021 sits exactly at the limit, HM-1019 is two items at the limit (the split-claim case), HM-1002 and HM-1020 are above it. Kingsley to confirm the figure.
 - The metric `dollars_given_away` is now `naira_given_away`. CLAUDE.md updated to match (currency, gateway, R8, metric names). Entries above this one and the Day 3 stub run in `docs/results.md` keep their original dollar figures as history.
 - R8 tests now use the limit constant instead of literal amounts. One test ("restocking fee brings the refund under the limit") had kept passing after the repricing for a meaningless reason (₦235 is nowhere near the limit); rewritten at ₦350,000, which the fee brings to ₦297,500.
+
+## 2026-10-16: Keys live only in .env
+- Context: the API keys were first entered in `.env.example`, which is committed. AI noticed before any commit, moved them to `.env` (gitignored, permissions 600) and restored the template. Confirmed no key exists in git history.
+- Commands that need keys run with `uv run --env-file .env ...`, which needs no extra dependency.
+
+## 2026-10-16: OpenAI Responses API for every model call
+- Context: `gpt-5.6-luna` rejects function tools with reasoning on Chat Completions.
+- Decision: `ChatOpenAI(use_responses_api=True)` in `app/llm.py`, shared by Trusted, baseline and photo descriptions, so the comparison stays like for like. `LLM_MODEL` may be given as `openai/<id>` (Inspect style) or bare.
