@@ -101,11 +101,15 @@ def run_conversation(agent_kind: str):
             agent = build_agent(agent_kind, sessions)
             user = ScriptedUser(md["turns"])
             state.messages = []
+            actions: list[str] = []  # tool results, so the judge can tell reported actions from invented ones
             reply = None
             while (message := user.next_message(reply)) is not None:
                 state.messages.append(ChatMessageUser(content=message))
+                seen = len(getattr(agent, "messages", []))
                 reply = await agent.respond(message)
                 state.messages.append(ChatMessageAssistant(content=reply))
+                actions += [m.text for m in getattr(agent, "messages", [])[seen:] if m.type == "tool"]
+            state.store.set("actions", actions)
 
             state.store.set("observed", observe(sessions, before))
             state.store.set("forbidden_tokens", forbidden_tokens(sessions, md["may_reveal_orders"]))

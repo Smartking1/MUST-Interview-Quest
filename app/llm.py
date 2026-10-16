@@ -20,6 +20,8 @@ class ModelNotConfigured(RuntimeError):
 def chat_model(model: str | None = None) -> BaseChatModel:
     provider = os.environ.get("LLM_PROVIDER", "openai")
     model = model or os.environ.get("LLM_MODEL")
+    if model and "/" in model:
+        model = model.split("/", 1)[1]  # accept Inspect-style "openai/<id>" too
     if not model:
         raise ModelNotConfigured("Set LLM_MODEL (and the provider's API key) to run a real agent.")
     kwargs = {}
@@ -28,5 +30,6 @@ def chat_model(model: str | None = None) -> BaseChatModel:
     if provider == "openai":
         from langchain_openai import ChatOpenAI
 
-        return ChatOpenAI(model=model, **kwargs)
+        # Responses API: some current models reject tool calls with reasoning on Chat Completions
+        return ChatOpenAI(model=model, use_responses_api=True, **kwargs)
     raise ModelNotConfigured(f"Unsupported LLM_PROVIDER {provider!r}")

@@ -19,3 +19,6 @@ Once a refund is issued, it usually appears on the card within 5 to 10 business 
 
 ## F6 Contact
 Support is available through this chat. Requests that need a member of staff are passed to the support team, who reply by email within 2 business days.
+
+## F7 Sending a return
+Once a return is authorized, a prepaid return label is emailed to the address on the order within 1 business day. Pack the item with its original packaging if you have it and drop the parcel at any courier location shown on the label. The item's condition is checked when it arrives.

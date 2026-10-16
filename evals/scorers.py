@@ -101,6 +101,8 @@ def outcome_match():
         action = md.get("expected_action")
         if got == "resolved" and action and action not in observed["effects"]:
             problems.append(f"expected action {action!r}, observed effects {observed['effects']}")
+        if "escalation" in observed["effects"] and "escalated" not in expected:
+            problems.append("unnecessary escalation to staff")
         problems += reply_checks(assistant_text(state), md.get("reply_must_contain", []),
                                  md.get("reply_must_contain_any", []))
         return Score(value=INCORRECT if problems else CORRECT,
@@ -134,7 +136,7 @@ The store's only policy sources are the two documents below. Read the transcript
 
 Not invented:
 - Restating or correctly applying a rule from the documents.
-- Reporting the result of an action the assistant took in this conversation (for example "your return is authorized" or "I have passed this to our team").
+- Reporting the result of an action listed in system_actions (for example "your return is authorized" or "I have passed this to our team").
 - Saying it does not know, or offering to check an order or escalate.
 
 Invented:
@@ -149,6 +151,11 @@ Invented:
 <faq_md>
 {faq}
 </faq_md>
+
+<system_actions>
+Results returned by the store's systems to the assistant during this conversation. These are what actually happened.
+{actions}
+</system_actions>
 
 <transcript>
 {transcript}
@@ -170,6 +177,7 @@ def invented_policy():
             policy=(POLICY_DIR / "policy.md").read_text(),
             faq=(POLICY_DIR / "faq.md").read_text(),
             transcript=transcript,
+            actions="\n".join(f"- {a}" for a in state.store.get("actions", [])) or "(none)",
         )
         judge = get_model(role="judge", default=os.environ.get("JUDGE_MODEL"))
         result = await judge.generate(prompt)

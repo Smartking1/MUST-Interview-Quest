@@ -182,8 +182,11 @@ def build_tools(ctx: ConversationContext) -> dict[str, BaseTool]:
                 s.commit()
                 denied = [i for i in d.items if i.outcome == Outcome.DENY]
                 note = "".join(f" Item {i.line_item_id} not eligible: {i.reason}" for i in denied)
-                return (f"Return authorized for line items {list(d.line_item_ids)}.{note} The refund amount is "
-                        f"decided when the return is received and inspected. Rules: {rules}.")
+                return (f"Return authorized for line items {list(d.line_item_ids)}.{note} Next step (F7): a prepaid "
+                        f"return label is emailed within 1 business day. Refund once received (R2, R3): full refund if "
+                        f"unopened; if opened and returned within 15 days of delivery, minus a 15% restocking fee "
+                        f"(no fee on fashion items with tags attached). The condition is recorded by the warehouse on arrival, "
+                        f"not taken from the conversation, so the refund amount is not known yet.")
             if d.outcome == Outcome.ESCALATE:
                 esc = _escalate(ctx, s, order, f"{reason.value} for items {list(line_item_ids)}",
                                 d.rule_ids, d.reason, d.proposed_amount_kobo, d.line_item_ids)
