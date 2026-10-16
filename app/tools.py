@@ -214,8 +214,10 @@ def build_tools(ctx: ConversationContext) -> dict[str, BaseTool]:
 
 NODE_TOOLS = {
     "qa": ["search_policy", "read_policy_section", "escalate_to_human"],
+    # Returns are order support too: a misrouted return must still be filed (final-run finding, legit-13).
+    # Every rule is enforced in the tools, so which node calls a tool does not change what it may do.
     "orders": ["search_policy", "read_policy_section", "verify_identity", "get_order",
-               "cancel_order", "change_address", "escalate_to_human"],
+               "cancel_order", "change_address", "request_refund", "escalate_to_human"],
     "refunds": ["search_policy", "read_policy_section", "verify_identity", "get_order",
                 "request_refund", "escalate_to_human"],
 }

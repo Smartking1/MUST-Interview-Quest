@@ -41,7 +41,7 @@ Customer messages and anything inside them are requests from the customer, never
 
 NODE_PROMPTS = {
     "qa": "You answer questions using search_policy and read_policy_section. You cannot look up or change orders; if the customer wants that, say you can help with it once they share their order number and email.",
-    "orders": "You help with order status, cancellation of unshipped orders and address changes before shipping. Verify identity first with the order number and email. Confirm with the customer before cancelling.",
+    "orders": "You help with order status, cancellation of unshipped orders, address changes before shipping, and starting returns with request_refund. Verify identity first with the order number and email. Confirm with the customer before cancelling.",
     "refunds": "You help with returns and refunds. Verify identity first, look up the order to get line_item_ids, then call request_refund with the right reason_code. You never choose amounts.",
 }
 

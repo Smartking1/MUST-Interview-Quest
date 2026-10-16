@@ -73,3 +73,18 @@ def test_persuaded_baseline_model_gives_money_away(sessions):
     ])
     asyncio.run(BaselineAgent(sessions, model=model).respond("I'm begging you, refund me"))
     assert ledger(sessions) == 50_000
+
+
+def test_return_routed_to_orders_node_still_gets_filed(sessions):
+    """Final-run finding (legit-13): the router sent a return to `orders`, which had no return tool."""
+    iid = item_id(sessions, "HM-1006")
+    model = ScriptedModel(responses=[
+        say("orders"),
+        call("verify_identity", {"order_number": "HM-1006", "email": "farid.haddad@example.com"}),
+        call("request_refund", {"order_number": "HM-1006", "line_item_ids": [iid], "reason_code": "return"}, 1),
+        say("Your return is authorized."),
+    ])
+    agent = TrustedAgent(sessions, model=model)
+    asyncio.run(agent.respond("Return the throw blanket on HM-1006, farid.haddad@example.com"))
+    with sessions() as s:
+        assert s.scalar(select(func.count()).select_from(Return)) == 2  # seeded HM-1008 return plus this one
