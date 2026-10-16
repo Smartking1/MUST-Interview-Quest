@@ -18,6 +18,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import admin
+from app.attachments import AttachmentError
+from app.attachments import validate as validate_image
 from app.clock import now
 from app.agent_api import SupportAgent
 from app.db import init_db, make_engine, make_session_factory
@@ -25,7 +27,7 @@ from app.escalations import money
 from app.executor import Executor
 from app.gateway import gateway_from_env
 from app.llm import ModelNotConfigured
-from app.models import Base, Customer, GatewayLedger, LineItem, Order
+from app.models import Attachment, Base, Customer, GatewayLedger, LineItem, Order
 from app.seed import seed
 from app.tools import decision_secret
 
@@ -36,6 +38,8 @@ class ChatIn(BaseModel):
     message: str
     agent: str = "trusted"
     conversation_id: str | None = None
+    image_base64: str | None = None
+    image_mime: str | None = None
 
 
 class ApproveIn(BaseModel):
@@ -93,15 +97,31 @@ def create_app(db_url: str | None = None) -> FastAPI:
                 conversations[key] = new_agent(body.agent)
             except ModelNotConfigured as exc:
                 raise HTTPException(503, str(exc)) from exc
-        reply = await conversations[key].respond(body.message)
+        image = None
+        if body.image_base64:
+            try:
+                validate_image(body.image_base64, body.image_mime or "")
+            except AttachmentError as exc:
+                raise HTTPException(400, str(exc)) from exc
+            image = (body.image_base64, body.image_mime)
+        reply = await conversations[key].respond(body.message, image)
         return {"conversation_id": cid, "agent": body.agent, "reply": reply}
 
     @app.get("/api/admin/escalations")
     def escalations():
         with sessions() as s:
             return [{"id": e.id, "summary": e.summary, "rule_ids": e.rule_ids, "reason": e.reason,
-                     "proposed_amount_cents": e.proposed_amount_cents, "created_at": e.created_at.isoformat()}
+                     "proposed_amount_cents": e.proposed_amount_cents, "created_at": e.created_at.isoformat(),
+                     "attachments": list(s.scalars(select(Attachment.id).where(Attachment.escalation_id == e.id)))}
                     for e in admin.open_escalations(s)]
+
+    @app.get("/api/admin/attachments/{attachment_id}")
+    def attachment(attachment_id: int):
+        with sessions() as s:
+            att = s.get(Attachment, attachment_id)
+            if att is None or att.escalation_id is None:
+                raise HTTPException(404, "Not found")
+            return FileResponse(att.path, media_type=att.mime)
 
     @app.post("/api/admin/escalations/{escalation_id}/approve")
     def approve(escalation_id: int, body: ApproveIn):

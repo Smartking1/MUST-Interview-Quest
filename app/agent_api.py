@@ -16,7 +16,9 @@ AGENT_KINDS = ("trusted", "baseline", "stub")
 class SupportAgent(Protocol):
     kind: str
 
-    async def respond(self, message: str) -> str: ...
+    async def respond(self, message: str, image: tuple[str, str] | None = None) -> str:
+        """image is (base64 data, mime type), already validated."""
+        ...
 
 
 class StubAgent:
@@ -27,7 +29,7 @@ class StubAgent:
     def __init__(self, sessions: sessionmaker[Session]):
         self.sessions = sessions
 
-    async def respond(self, message: str) -> str:
+    async def respond(self, message: str, image: tuple[str, str] | None = None) -> str:
         return "Sorry, I can't help with that yet."
 
 

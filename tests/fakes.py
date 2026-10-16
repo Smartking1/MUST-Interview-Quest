@@ -9,8 +9,10 @@ from langchain_core.outputs import ChatGeneration, ChatResult
 
 class ScriptedModel(BaseChatModel):
     responses: list[AIMessage]
+    seen: list = []  # every message list the model was given, for asserting what it could see
 
     def _generate(self, messages, stop=None, run_manager=None, **kwargs: Any) -> ChatResult:
+        self.seen.append(list(messages))
         msg = self.responses.pop(0) if self.responses else AIMessage(content="(script finished)")
         return ChatResult(generations=[ChatGeneration(message=msg)])
 

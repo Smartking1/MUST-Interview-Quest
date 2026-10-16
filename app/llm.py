@@ -17,9 +17,9 @@ class ModelNotConfigured(RuntimeError):
     pass
 
 
-def chat_model() -> BaseChatModel:
+def chat_model(model: str | None = None) -> BaseChatModel:
     provider = os.environ.get("LLM_PROVIDER", "openai")
-    model = os.environ.get("LLM_MODEL")
+    model = model or os.environ.get("LLM_MODEL")
     if not model:
         raise ModelNotConfigured("Set LLM_MODEL (and the provider's API key) to run a real agent.")
     kwargs = {}

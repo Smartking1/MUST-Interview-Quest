@@ -30,6 +30,8 @@
   textarea { flex:1; font:inherit; padding:10px; border:1px solid var(--line); border-radius:8px; resize:none; height:52px; }
   form button { padding:0 18px; font:inherit; border:0; border-radius:8px; background:var(--ink); color:#fff; cursor:pointer; }
   details { padding:0 20px 8px; color:var(--muted); font-size:13px; }
+  .photo { display:flex; align-items:center; padding:0 12px; border:1px solid var(--line); border-radius:8px; cursor:pointer; color:var(--muted); background:#fff; }
+  .photo-name { padding:0 20px 10px; color:var(--muted); font-size:13px; min-height:1em; }
   @media (max-width: 760px) { main { grid-template-columns:1fr; height:auto; } .log { min-height:280px; } }
 </style>
 </head>
@@ -50,9 +52,11 @@
   <section class="pane baseline" hidden><h2>Baseline: conventional agent, unsafe, for comparison only</h2><div class="log" id="log-baseline"></div></section>
 </main>
 <form id="form">
+  <label class="photo" title="Attach a photo (JPEG, PNG or WebP, up to 5 MB)">Photo<input type="file" id="photo" accept="image/jpeg,image/png,image/webp" hidden></label>
   <textarea id="input" placeholder="Type a message. Include your order number and email for order help." required></textarea>
   <button>Send</button>
 </form>
+<div id="photo-name" class="photo-name"></div>
 <script>
 const state = { mode: "trusted", ids: { trusted: null, baseline: null } };
 const panes = { trusted: document.querySelector(".pane.trusted"), baseline: document.querySelector(".pane.baseline") };
@@ -76,12 +80,25 @@ function add(agent, cls, text) {
   return el;
 }
 
-async function send(agent, message) {
-  add(agent, "user", message);
+let photo = null;  // { base64, mime, name }
+document.getElementById("photo").onchange = e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    photo = { base64: reader.result.split(",")[1], mime: file.type, name: file.name };
+    document.getElementById("photo-name").textContent = "Attached: " + file.name + " (sent with your next message)";
+  };
+  reader.readAsDataURL(file);
+};
+
+async function send(agent, message, image) {
+  add(agent, "user", image ? message + "\n[photo: " + image.name + "]" : message);
   const pending = add(agent, "bot", "...");
   try {
     const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, agent, conversation_id: state.ids[agent] }) });
+      body: JSON.stringify({ message, agent, conversation_id: state.ids[agent],
+        image_base64: image ? image.base64 : null, image_mime: image ? image.mime : null }) });
     const data = await r.json();
     if (!r.ok) throw new Error(data.detail || r.statusText);
     state.ids[agent] = data.conversation_id;
@@ -99,7 +116,11 @@ document.getElementById("form").onsubmit = e => {
   if (!message) return;
   input.value = "";
   const agents = state.mode === "both" ? ["trusted", "baseline"] : [state.mode];
-  agents.forEach(a => send(a, message));
+  const image = photo;
+  photo = null;
+  document.getElementById("photo").value = "";
+  document.getElementById("photo-name").textContent = "";
+  agents.forEach(a => send(a, message, image));
 };
 document.getElementById("input").addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); document.getElementById("form").requestSubmit(); }

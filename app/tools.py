@@ -18,6 +18,7 @@ from langchain_core.tools import BaseTool, StructuredTool
 from sqlalchemy.orm import Session, sessionmaker
 
 from app import retrieval
+from app.attachments import attach_to_escalation
 from app.clock import now
 from app.escalations import create_escalation, money
 from app.escalations import describe_order as _describe_order
@@ -58,6 +59,7 @@ class ConversationContext:
     customer_id: int | None = None
     last_customer_message: str = ""
     escalation_ids: list[int] = field(default_factory=list)
+    attachment_ids: list[int] = field(default_factory=list)  # photos waiting to go to staff
 
 
 def make_context(sessions: sessionmaker[Session], executor: Executor | None = None) -> ConversationContext:
@@ -79,6 +81,11 @@ def _escalate(ctx: ConversationContext, s: Session, order: Order | None, request
               line_item_ids: tuple[int, ...] = ()) -> Escalation:
     esc = create_escalation(s, order, request, rule_ids, reason, proposed, line_item_ids,
                             customer_id=ctx.customer_id, last_message=ctx.last_customer_message)
+    descriptions = attach_to_escalation(s, ctx.attachment_ids, esc.id)
+    if descriptions:
+        esc.image_description = "\n".join(descriptions)
+        esc.summary += f"\nPhotos: {len(descriptions)} attached. " + " ".join(descriptions)
+    ctx.attachment_ids.clear()
     ctx.escalation_ids.append(esc.id)
     return esc
 

@@ -26,6 +26,7 @@
   .baseline { color:var(--bad); font-weight:600; }
   .muted { color:var(--muted); }
   #flash { min-height:1.4em; }
+  .thumb { max-height:120px; max-width:200px; border:1px solid var(--line); border-radius:6px; margin-bottom:8px; }
   @media (max-width: 640px) { table { font-size:12px; } }
 </style>
 </head>
@@ -75,7 +76,10 @@ async function load() {
         { admin: adminName(), amount_cents: amount.value ? Math.round(parseFloat(amount.value) * 100) : null }) });
     const deny = el("button", { className: "deny", textContent: "Deny",
       onclick: () => post(`/api/admin/escalations/${e.id}/deny`, { admin: adminName() }) });
-    box.append(el("div", { className: "card" }, el("pre", { textContent: `Case ${e.id}\n${e.summary}` }),
+    const photos = el("div", { className: "row" });
+    (e.attachments || []).forEach(id => photos.append(el("a", { href: `/api/admin/attachments/${id}`, target: "_blank" },
+      el("img", { src: `/api/admin/attachments/${id}`, alt: "Customer photo", className: "thumb" }))));
+    box.append(el("div", { className: "card" }, el("pre", { textContent: `Case ${e.id}\n${e.summary}` }), photos,
       el("div", { className: "row" }, amount, approve, deny)));
   });
 

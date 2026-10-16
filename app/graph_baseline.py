@@ -136,8 +136,13 @@ class BaselineAgent:
         self.graph = graph.compile()
         self.messages: list[AnyMessage] = []
 
-    async def respond(self, message: str) -> str:
+    async def respond(self, message: str, image: tuple[str, str] | None = None) -> str:
+        # Conventional vision-enabled agent: the photo goes straight to the model
+        content = message if not image else [
+            {"type": "text", "text": message},
+            {"type": "image_url", "image_url": {"url": f"data:{image[1]};base64,{image[0]}"}},
+        ]
         result = await self.graph.ainvoke(
-            {"messages": self.messages + [HumanMessage(message)]}, {"recursion_limit": 25})
+            {"messages": self.messages + [HumanMessage(content=content)]}, {"recursion_limit": 25})
         self.messages = result["messages"]
         return self.messages[-1].text

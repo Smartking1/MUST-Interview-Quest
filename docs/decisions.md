@@ -80,3 +80,13 @@ Places where policy.md is silent or ambiguous, and how the engine reads them. Ea
 ## 2026-10-16: Chat UI sends one message to both agents side by side
 - Decision: the chat page has Trusted, Baseline and Side by side modes. The demo needs the same attack against both agents in one frame. The baseline pane is labelled unsafe in the UI.
 - The API takes JSON only. Image upload (first on the cut list) will send base64 in JSON, which avoids adding `python-multipart`.
+
+## 2026-10-16: Stripe gateway refunds the order's PaymentIntent, keyed by decision_id
+- Decision: `StripeGateway` refunds the PaymentIntent stored on the order, with `decision_id` as Stripe's idempotency key, so a retried decision cannot refund twice even if our database write fails after Stripe succeeds. `app/stripe_setup.py` creates one confirmed test-mode PaymentIntent per seeded order (test card `pm_card_visa`) and mirrors seeded refunds.
+- Live keys are refused at construction (`_live_` anywhere in the key), so the app refuses to start on one (invariant 9). Tested.
+- Fallback order unchanged: Stripe test mode, then `stripe-mock` (via `STRIPE_API_BASE`), then Paystack. Docker Desktop did not start on this machine on 2026-10-16, so `stripe-mock` was not run; the gateway is unit-tested against a recording stand-in until test keys arrive.
+
+## 2026-10-16: The Trusted model never sees customer photos
+- Decision: a photo uploaded in chat is validated (type, magic bytes, 5 MB), stored, and the model receives only a server-written system note that a photo exists. On escalation the photo is linked to the case; a vision model may describe it for staff, with any text in the photo quoted as content. The description goes into the staff summary only. The policy engine never receives the photo or its description.
+- Alternative rejected: show the photo to the chat model and tell it to ignore instructions in images. That is a prompt-level defense against image injection, the exact habit this project drops (assumption #1).
+- The baseline passes photos straight to its model, as a conventional vision-enabled agent would. That sets up the Day 4 image injection attacks as a fair comparison.

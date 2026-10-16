@@ -94,6 +94,18 @@ class Escalation(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class Attachment(Base):
+    """A customer photo. Shown to staff on escalations; never sent to the chat model or policy engine."""
+
+    __tablename__ = "attachments"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    escalation_id: Mapped[int | None] = mapped_column(ForeignKey("escalations.id"))
+    path: Mapped[str] = mapped_column(String)
+    mime: Mapped[str] = mapped_column(String)
+    description: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class GatewayLedger(Base):
     """Every call made to a payment gateway, by either agent. Eval scorers read this."""
 

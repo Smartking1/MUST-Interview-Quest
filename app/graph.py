@@ -17,6 +17,7 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.attachments import save_upload
 from app.executor import Executor
 from app.llm import chat_model
 from app.tools import NODE_TOOLS, build_tools, make_context
@@ -42,6 +43,10 @@ NODE_PROMPTS = {
     "orders": "You help with order status, cancellation of unshipped orders and address changes before shipping. Verify identity first with the order number and email. Confirm with the customer before cancelling.",
     "refunds": "You help with returns and refunds. Verify identity first, look up the order to get line_item_ids, then call request_refund with the right reason_code. You never choose amounts.",
 }
+
+
+PHOTO_NOTE = ("The customer attached a photo. You cannot see it and must not guess what it shows. "
+              "It will be attached automatically to any case passed to staff.")
 
 
 class State(TypedDict):
@@ -93,9 +98,16 @@ class TrustedAgent:
         self.graph = build_graph(model or chat_model(), build_tools(self.ctx))
         self.messages: list[AnyMessage] = []
 
-    async def respond(self, message: str) -> str:
+    async def respond(self, message: str, image: tuple[str, str] | None = None) -> str:
         self.ctx.last_customer_message = message
-        result = await self.graph.ainvoke(
-            {"messages": self.messages + [HumanMessage(message)]}, {"recursion_limit": 25})
+        new: list[AnyMessage] = []
+        if image:
+            # Invariant 6: the model never sees the photo, only that one exists
+            with self.ctx.sessions() as s:
+                self.ctx.attachment_ids.append(save_upload(s, *image).id)
+                s.commit()
+            new.append(SystemMessage(PHOTO_NOTE))
+        new.append(HumanMessage(message))
+        result = await self.graph.ainvoke({"messages": self.messages + new}, {"recursion_limit": 25})
         self.messages = result["messages"]
         return self.messages[-1].text

@@ -66,3 +66,16 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
   - Audit, code review half (started 06:12): pinned five targets in `audit/targets.md` and wrote code review findings in `docs/audit.md`. Confirmed the directive's discovery claim at the pinned commit (T1 `nodes.py:66`). Found two further T1 issues by reading the code, and noted strengths fairly (T2 identity, T4 and T5 amounts from the database).
 - Not yet done: no run against a real model. Waiting for the OpenAI key and the exact model ID for "LUNA".
 - Time spent: about 30 minutes of session time, 05:50 to about 06:20 WAT (from git commit times). **[Kingsley to confirm]**
+
+## Day 3, 2026-10-16, session 2
+- Goal: continue Day 3: real payment gateway in test mode, image upload, one real test-mode refund.
+- What Kingsley directed: "go on with day 3".
+- What AI produced:
+  - `StripeGateway` in `app/gateway.py` (test mode only, refuses live keys, idempotency key = decision_id), `app/stripe_setup.py` (test PaymentIntents for seeded orders), `stripe` dependency (in the directive's stack).
+  - Photo upload: `app/attachments.py`, `Attachment` model, photo handling in both agents, `/api/admin/attachments/{id}`, photo picker in the chat page, thumbnails in the admin escalation queue.
+  - Tests: live key refusal, idempotency key passed to Stripe, the Trusted model never receiving photo content (checked against everything the model was given), photos linked to escalations, and the baseline model receiving the photo. 136 tests, keyless.
+- Kept: all of the above.
+- Rejected or changed, and why: showing photos to the Trusted model with a "do not follow instructions in images" prompt was rejected in favour of not showing them at all (decisions.md).
+- Failures hit: Docker Desktop did not start within two minutes, so `stripe-mock` could not be run. The Stripe gateway is unit-tested against a recording stand-in instead; the real check waits for test keys.
+- Not yet done: one real test-mode refund end to end (needs Stripe test keys); any run against a real model (needs the OpenAI key and model ID).
+- Time spent: (to update at end of session)
