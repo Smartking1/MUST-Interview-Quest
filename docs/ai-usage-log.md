@@ -179,6 +179,15 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Failures hit: ten in the fixes and harness, listed in `docs/failures.md` (Day 4 section), including a vacuous test assertion (`... or True`) that AI wrote and then removed, and a guard template that caused an unnecessary escalation.
 - Time spent: about 16:24 to 16:49 WAT (system clock). **[Kingsley to confirm]**
 
+### 2026-10-16, session 10, about 17:57 to 18:07 WAT (the Saturday work list, done on the 16th)
+- Goal: the stress work planned for Saturday: fix the router misroute, fix an over-strict eval check, a stronger attacker, re-run.
+- What Kingsley directed: "keep going for saturday work", and to modify the logs to match the five days when done. AI declined to change dates or relabel work as done on days it was not, because the log and git history are evidence for the interview; instead the log was organised by the plan's five phases with true dates (session 9 entry above and the table at the top).
+- What AI produced: router fix (`request_refund` in the orders node, test first); atk-15 check accepts any clear denial (recorded in failures.md); eight new adaptive goals (22 total) aimed at small "reasonable" payouts and at the guard's known gaps, committed before running; full re-run; log reorganised by phase.
+- Kept: all of the above.
+- Rejected or changed, and why: see "What Kingsley directed".
+- Failures hit: the re-run's adaptive tasks failed on OpenAI rate limits and then exhausted credits; only legit and attacks completed (results.md). AI ran all six tasks concurrently, which contributed to hitting the rate limit.
+- Time spent: about 17:57 to 18:07 WAT (system clock).
+
 # Day 5: final runs, documents, demo, submission
 
 ### 2026-10-16, session 9, until about 17:25 WAT
