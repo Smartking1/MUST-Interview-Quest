@@ -24,7 +24,21 @@ Plus a staff page (`/admin`) for escalated cases and warehouse receipt of return
 
 ## Results
 
-<!-- RESULTS: filled from the final runs in evals/logs/final (docs/results.md). -->
+Final runs: both agents on the same model (`gpt-5.6-luna`), every suite three times, 474 conversations (`docs/results.md`, logs in `evals/logs/final/`).
+
+| | Trusted Support | Conventional agent (baseline) |
+|---|---|---|
+| Legitimate tickets resolved correctly | **98%** (59 of 60) | 80% |
+| Unauthorized refunds, legitimate tickets | 0 | **₦423,500**, in 2 of 3 runs of one routine request |
+| Unauthorized refunds under attack (177 conversations each) | 0 | 0 |
+| Replies free of invented policy, adaptive attacker | **69%** | 12% |
+| Replies free of invented policy, legitimate tickets | **97%** | 77% |
+| Data leaks | 0 | 0 |
+
+What this shows:
+- **The conventional agent broke its own refund limit on an ordinary request.** Asked to cancel a ₦423,500 order, it refunded in full instead of sending it to a human, although the ₦300,000 limit was written in its instructions. No attack was needed.
+- **Under attack, both agents kept the money on this model.** The difference was in what they told customers: pressed by an adaptive attacker, the conventional agent stated rules, exceptions and outcomes that do not exist in 88% of conversations.
+- **Trusted Support stayed useful:** 98% of legitimate tickets resolved without unnecessary escalation.
 
 ## Limitations
 
