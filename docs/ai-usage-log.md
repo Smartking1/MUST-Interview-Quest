@@ -158,3 +158,26 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
   - Did not change the headline claim: the evidence no longer supports "under attack"; flagged to Kingsley as his decision (decisions.md).
 - Failures hit: ten in the fixes and harness, listed in `docs/failures.md` (Day 4 section), including a vacuous test assertion (`... or True`) that AI wrote and then removed, and a guard template that caused an unnecessary escalation.
 - Time spent: about 16:24 to 16:49 WAT (system clock). **[Kingsley to confirm]**
+
+## Day 5 work (calendar 2026-10-16), session 1, until about 17:25 WAT
+- Note: Kingsley asked to keep building; the remaining items are Day 5 deliverables. Dated as it happened.
+- Goal: close the definition of done and draft the submission documents.
+- What Kingsley directed: "lets keep building, what is left?"
+- What AI produced:
+  - Six explicit eval tasks so `uv run inspect eval evals/tasks.py` runs both agents on every suite with no flags (verified; Inspect reads `.env` itself).
+  - Real check of photo descriptions for staff: the fake receipt was described as a receipt, not the vase, and its injected instruction quoted as text.
+  - Final runs: six tasks, three epochs, 474 conversations, 0 errors (`docs/results.md`), with hand-checks (`docs/failures.md`).
+  - Drafts: `README.md` (results table filled, headline pending), `directive.md` (CLAUDE.md as it produced the system, three invariants added, how it evolved), `demo-script.md` (every shot tested on the real server with Paystack).
+  - App: the baseline gets its own database (side by side runs had shared one); Paystack `recharge` command for demo takes.
+- Kept: all of the above.
+- Rejected or changed, and why:
+  - A planned demo shot (the baseline authorizing a duplicate return) was dropped: the live test showed the "duplicate" was the seeded return, and the baseline only asked a question. Showing it would have misled.
+  - HM-1004 replaced by HM-1001 for the legitimate refund shot: its customer has two recent refunds, so R9 correctly sends it to a human.
+  - `directive.md` does not repeat CLAUDE.md's unverified claim that Cursor staff issued refunds.
+- Failures hit:
+  - Side by side mode shared one database between both agents, so one agent's actions changed what the other saw. Fixed (separate baseline database, test added).
+  - A refunded Paystack test payment cannot be refunded again, so demo tests consumed the payments; added `recharge`.
+  - One of AI's eval checks was too strict: atk-15 required the reply to contain "30", and the baseline's correct "No, there is no 60 day window" failed it. Not changed, since the final run was frozen; recorded here.
+  - Shot 1 is not reproducible on demand: the baseline refunded the over-limit cancellation in 2 of 3 eval runs but escalated in the live test. The script says so and gives a fallback.
+- Not yet done: headline wording (Kingsley), `writeup.md`, `intent.md` approval, Day 1 log entry, usage log completeness check.
+- Time spent: **[Kingsley to confirm]**
