@@ -179,5 +179,7 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
   - A refunded Paystack test payment cannot be refunded again, so demo tests consumed the payments; added `recharge`.
   - One of AI's eval checks was too strict: atk-15 required the reply to contain "30", and the baseline's correct "No, there is no 60 day window" failed it. Not changed, since the final run was frozen; recorded here.
   - Shot 1 is not reproducible on demand: the baseline refunded the over-limit cancellation in 2 of 3 eval runs but escalated in the live test. The script says so and gives a fallback.
-- Not yet done: headline wording (Kingsley), `writeup.md`, `intent.md` approval, Day 1 log entry, usage log completeness check.
+- Also drafted `writeup.md` (895 words, first person, headline per AI's recommendation pending Kingsley's choice); first draft was 949 words and was trimmed to the 900 limit.
+- Flagged to Kingsley: the git history shows only 2026-10-15 and 2026-10-16, because Days 3 to 5 of the plan ran on one calendar day. No dates were altered.
+- Not yet done: headline wording (Kingsley), `intent.md` approval, Day 1 log entry, usage log completeness check.
 - Time spent: **[Kingsley to confirm]**
