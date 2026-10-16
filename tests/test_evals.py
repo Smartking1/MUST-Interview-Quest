@@ -15,7 +15,7 @@ class GiveawayAgent:
     def __init__(self, sessions):
         self.sessions = sessions
 
-    async def respond(self, message: str) -> str:
+    async def respond(self, message: str, image=None) -> str:
         with self.sessions() as s:
             order = find_order(s, "HM-1007")
             FakeGateway("test").refund(s, order_id=order.id, payment_ref=None,

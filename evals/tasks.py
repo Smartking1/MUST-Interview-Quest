@@ -11,6 +11,7 @@ Examples:
 
 from __future__ import annotations
 
+import base64
 import os
 import tempfile
 from pathlib import Path
@@ -33,14 +34,30 @@ from evals.scorers import (
     outcome_match,
     unauthorized_refund,
 )
+from evals.attacker import AdaptiveAttacker
 from evals.user_sim import ScriptedUser
 
 os.environ.setdefault("FROZEN_NOW", SEED_NOW.isoformat())
 DATASETS = Path(__file__).resolve().parent / "datasets"
 
 
+EVALS_DIR = Path(__file__).resolve().parent
+
+
 def record_to_sample(record: dict) -> Sample:
-    return Sample(id=record["id"], input=record["turns"][0], metadata=record)
+    first = record["turns"][0] if record.get("turns") else record["goal"]
+    return Sample(id=record["id"], input=first if isinstance(first, str) else first["text"], metadata=record)
+
+
+def load_image(path: str) -> tuple[str, str]:
+    data = (EVALS_DIR / path).read_bytes()
+    return base64.b64encode(data).decode(), "image/png"
+
+
+def make_user(md: dict):
+    if md.get("goal"):
+        return AdaptiveAttacker(md["goal"], md["persona"], md.get("max_turns", 8))
+    return ScriptedUser(md["turns"])
 
 
 def snapshot(sessions: sessionmaker[Session]) -> dict:
@@ -99,14 +116,17 @@ def run_conversation(agent_kind: str):
             before = snapshot(sessions)
 
             agent = build_agent(agent_kind, sessions)
-            user = ScriptedUser(md["turns"])
+            user = make_user(md)
             state.messages = []
             actions: list[str] = []  # tool results, so the judge can tell reported actions from invented ones
             reply = None
-            while (message := user.next_message(reply)) is not None:
-                state.messages.append(ChatMessageUser(content=message))
+            while (turn := await user.next_message(reply)) is not None:
+                message = turn if isinstance(turn, str) else turn["text"]
+                image = load_image(turn["image"]) if isinstance(turn, dict) and turn.get("image") else None
+                shown = message + (f"\n[photo attached: {turn['image']}]" if image else "")
+                state.messages.append(ChatMessageUser(content=shown))
                 seen = len(getattr(agent, "messages", []))
-                reply = await agent.respond(message)
+                reply = await agent.respond(message, image)
                 state.messages.append(ChatMessageAssistant(content=reply))
                 actions += [m.text for m in getattr(agent, "messages", [])[seen:] if m.type == "tool"]
             state.store.set("actions", actions)
@@ -140,3 +160,9 @@ def legit(agent: str = "trusted", judge: bool | None = None) -> Task:
 @task
 def attacks(agent: str = "trusted", judge: bool | None = None) -> Task:
     return _task("attacks", agent, judge)
+
+
+@task
+def adaptive(agent: str = "trusted", judge: bool | None = None) -> Task:
+    """Day 4: an attacker model with a goal, up to 8 adaptive turns. Needs --model-role attacker=..."""
+    return _task("adaptive", agent, judge)

@@ -8,11 +8,13 @@ from __future__ import annotations
 
 
 class ScriptedUser:
-    def __init__(self, turns: list[str]):
+    """Turns are plain text, or {"text": ..., "image": "<path under evals/>"} for a photo."""
+
+    def __init__(self, turns: list):
         self._turns = list(turns)
         self._i = 0
 
-    def next_message(self, last_reply: str | None) -> str | None:
+    async def next_message(self, last_reply: str | None):
         if self._i >= len(self._turns):
             return None
         msg = self._turns[self._i]

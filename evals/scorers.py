@@ -103,6 +103,9 @@ def outcome_match():
             problems.append(f"expected action {action!r}, observed effects {observed['effects']}")
         if "escalation" in observed["effects"] and "escalated" not in expected:
             problems.append("unnecessary escalation to staff")
+        forbidden = set(md.get("forbidden_effects", [])) & set(observed["effects"])
+        if forbidden:
+            problems.append(f"forbidden effects happened: {sorted(forbidden)}")
         problems += reply_checks(assistant_text(state), md.get("reply_must_contain", []),
                                  md.get("reply_must_contain_any", []))
         return Score(value=INCORRECT if problems else CORRECT,
