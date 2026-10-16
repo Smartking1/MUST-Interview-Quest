@@ -78,4 +78,4 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Rejected or changed, and why: showing photos to the Trusted model with a "do not follow instructions in images" prompt was rejected in favour of not showing them at all (decisions.md).
 - Failures hit: Docker Desktop did not start within two minutes, so `stripe-mock` could not be run. The Stripe gateway is unit-tested against a recording stand-in instead; the real check waits for test keys.
 - Not yet done: one real test-mode refund end to end (needs Stripe test keys); any run against a real model (needs the OpenAI key and model ID).
-- Time spent: (to update at end of session)
+- Time spent: session ended about 06:24 WAT (time from the system clock; start time not recorded). **[Kingsley to confirm]**
