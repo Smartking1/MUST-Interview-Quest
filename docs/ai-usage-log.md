@@ -4,7 +4,21 @@ One entry per working session, appended at the end of the session. Times are loc
 
 Fields marked **[Kingsley to fill]** cover work done outside the repo that only Kingsley can describe. They are left blank rather than reconstructed.
 
-## Day 1, 2026-10-14
+## How this log is organised
+
+The log follows the five phases of the plan in `directive.md`. Each entry keeps the date and time it actually happened. The work was compressed: phases 3, 4 and part of 5 all ran on 2026-10-16, and the git history shows the same dates.
+
+| Plan day | Phase | When it happened |
+|---|---|---|
+| Day 1 | Problem, solution and directive | 2026-10-14 |
+| Day 2 | Repository, policy engine, tests | 2026-10-15 |
+| Day 3 | Core system, product, payments, first real evals, audit | 2026-10-16, about 05:50 to 16:23 WAT |
+| Day 4 | Stress: adaptive attacker, harder attacks, fixes | 2026-10-16, from about 16:24 WAT |
+| Day 5 | Final runs, documents, demo, submission | 2026-10-16 onward, until submission on 2026-10-19 |
+
+# Day 1: problem, solution and directive
+
+### 2026-10-14
 - Goal: choose the problem and write the working directive (CLAUDE.md).
 - What Kingsley directed: worked out the problem and the solution with Claude (web version), producing CLAUDE.md.
 - What AI produced: drafts of CLAUDE.md in Claude (web version). Source: Kingsley, recorded on 2026-10-16.
@@ -14,7 +28,9 @@ Fields marked **[Kingsley to fill]** cover work done outside the repo that only 
 - Time spent: about 5 hours (Kingsley's estimate).
 - Evidence in repo: none from this day. The repo was initialised on Day 2. The directive arrived as a file named `CLAUDE (9).md`, last modified 2026-10-15 09:07.
 
-## Day 2, 2026-10-15, session 1, about 09:07 to 09:45
+# Day 2: repository, policy engine, tests
+
+### 2026-10-15, about 09:07 to 09:45
 Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:43).
 
 - Goal: turn the directive into an implementation plan, set up the repo, draft intent.md, then build the project skeleton and policy engine.
@@ -42,7 +58,9 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
   - Tests passed on the first run, which on its own proves little. AI deliberately broke three boundaries (R8 `>` changed to `>=`, R2 window widened to 31 days, R9 window widened to 90 days). The tests caught each one (2, 2 and 1 failures), and the original code was restored.
 - Time spent: about 40 minutes (from timestamps). **[Kingsley to confirm, and add any time spent outside the session]**
 
-## Day 3, 2026-10-16, session 1, from about 05:50 WAT
+# Day 3: core system, product, payments, first real evals, audit
+
+### 2026-10-16, session 1, from about 05:50 WAT
 - Goal: backfill this log, then continue development: seed data, eval harness, then the Day 2 core system (tools, graph, baseline).
 - What Kingsley directed: said "go on with development", interrupted to ask for the log to be backfilled (evidence for a job interview), then said to keep developing and keep the log updated, with discrepancies to be settled later.
 - What AI produced:
@@ -67,7 +85,7 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Not yet done: no run against a real model. Waiting for the OpenAI key and the exact model ID for "LUNA".
 - Time spent: about 30 minutes of session time, 05:50 to about 06:20 WAT (from git commit times). **[Kingsley to confirm]**
 
-## Day 3, 2026-10-16, session 2
+### 2026-10-16, session 2
 - Goal: continue Day 3: real payment gateway in test mode, image upload, one real test-mode refund.
 - What Kingsley directed: "go on with day 3".
 - What AI produced:
@@ -80,7 +98,7 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Not yet done: one real test-mode refund end to end (needs Stripe test keys); any run against a real model (needs the OpenAI key and model ID).
 - Time spent: session ended about 06:24 WAT (time from the system clock; start time not recorded). **[Kingsley to confirm]**
 
-## Day 3, 2026-10-16, session 3
+### 2026-10-16, session 3
 - Goal: switch the payment gateway to Paystack.
 - What Kingsley directed: switch to Paystack, because he cannot create a Stripe account in Nigeria.
 - What AI produced:
@@ -94,7 +112,7 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Not yet done: the real test-mode payment and refund need Kingsley's Paystack test secret key and one checkout payment with a test card.
 - Time spent: session ended about 08:31 WAT (system clock; start not recorded). **[Kingsley to confirm]**
 
-## Day 3, 2026-10-16, session 4
+### 2026-10-16, session 4
 - Goal: switch the store currency to naira.
 - What Kingsley directed: "switch the currency to naira" (choosing this over AI's recommendation to keep USD and send cents one to one as kobo).
 - What AI produced: renamed every `_cents` field to `_kobo` across code, tests and datasets; repriced the seed catalogue in naira; R8 limit ₦300,000; naira formatting in summaries and UI; policy and FAQ text; `naira_given_away` scorer; CLAUDE.md updated; Paystack gateway and setup docstrings simplified now that no conversion note is needed.
@@ -103,7 +121,7 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Failures hit: the first bulk rename did nothing because zsh does not split an unquoted variable into separate file arguments; rerun through xargs. 15 tests failed after repricing, all on hard-coded dollar-era amounts, as expected; updated, with R8 tests tied to the limit constant. One test kept passing for a meaningless reason after repricing and was rewritten. R8 off-by-one mutation re-checked: caught (3 failures).
 - Time spent: session ended about 08:55 WAT (system clock; start not recorded). **[Kingsley to confirm]**
 
-## Day 3, 2026-10-16, session 5, until about 13:40 WAT
+### 2026-10-16, session 5, until about 13:40 WAT
 - Goal: use the keys Kingsley provided: first real eval runs, Paystack test payment.
 - What Kingsley directed: provided the OpenAI key, model (`openai/gpt-5.6-luna`) and Paystack test key.
 - What AI produced:
@@ -117,7 +135,7 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Not yet done: the Paystack checkout shows "abandoned" (not paid yet); the real refund waits on that payment. Runtime half of the audit now unblocked.
 - Time spent: **[Kingsley to confirm]** (end time from the system clock)
 
-## Day 3, 2026-10-16, session 6, until about 16:21 WAT
+### 2026-10-16, session 6, until about 16:21 WAT
 - Goal: runtime half of the audit.
 - What Kingsley directed: "go on" (start the audit runtime while he completes the Paystack payment).
 - What AI produced:
@@ -137,7 +155,7 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Paystack HM-1001 checkout was paid by Kingsley during the session; see session 7.
 - Time spent: audit runtime from about 15:50 to 16:21 WAT (file times). **[Kingsley to confirm]**
 
-## Day 3, 2026-10-16, session 7, until about 16:23 WAT
+### 2026-10-16, session 7, until about 16:23 WAT
 - Goal: complete Day 3: real test-mode payments and one real refund through the chat.
 - What Kingsley directed: paid the HM-1001 test checkout with a Paystack test card.
 - What AI produced: ran `app.paystack_setup finish` (23 of 25 orders paid; HM-1019 and HM-1020 failed with "Insufficient Balance"); started the real server with the Paystack gateway and cancelled HM-1001 through the chat API; verified the refund at Paystack and in our database (`docs/results.md`).
@@ -146,7 +164,9 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Failures hit: AI's setup script saved payment references for the two failed charges; caught from the script's own output, references removed, script fixed to save only successful payments.
 - Time spent: **[Kingsley to confirm]**
 
-## Day 4 work (calendar 2026-10-16, Day 3 date), session 1, until about 16:49 WAT
+# Day 4: stress
+
+### 2026-10-16, session 8, about 16:24 to 16:49 WAT
 - Note: Kingsley asked to start Day 4 work at 16:24 on 2026-10-16. Dated as it happened.
 - Goal: stress: adaptive attacker, about 45 attacks including cross-capability and image injection, fix failures with architecture.
 - What Kingsley directed: "go on with day 4".
@@ -159,7 +179,9 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Failures hit: ten in the fixes and harness, listed in `docs/failures.md` (Day 4 section), including a vacuous test assertion (`... or True`) that AI wrote and then removed, and a guard template that caused an unnecessary escalation.
 - Time spent: about 16:24 to 16:49 WAT (system clock). **[Kingsley to confirm]**
 
-## Day 5 work (calendar 2026-10-16), session 1, until about 17:25 WAT
+# Day 5: final runs, documents, demo, submission
+
+### 2026-10-16, session 9, until about 17:25 WAT
 - Note: Kingsley asked to keep building; the remaining items are Day 5 deliverables. Dated as it happened.
 - Goal: close the definition of done and draft the submission documents.
 - What Kingsley directed: "lets keep building, what is left?"
