@@ -26,7 +26,7 @@ from app.gateway import FakeGateway
 from app.llm import chat_model
 from app.models import Customer, Escalation, Return
 from app.repository import find_order
-from app.tools import money
+from app.escalations import money
 
 POLICY_DIR = Path(__file__).resolve().parent.parent / "policy"
 

@@ -17,6 +17,7 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.executor import Executor
 from app.llm import chat_model
 from app.tools import NODE_TOOLS, build_tools, make_context
 
@@ -86,8 +87,9 @@ def build_graph(model: BaseChatModel, tools: dict[str, BaseTool]):
 class TrustedAgent:
     kind = "trusted"
 
-    def __init__(self, sessions: sessionmaker[Session], model: BaseChatModel | None = None):
-        self.ctx = make_context(sessions)
+    def __init__(self, sessions: sessionmaker[Session], model: BaseChatModel | None = None,
+                 executor: Executor | None = None):
+        self.ctx = make_context(sessions, executor)
         self.graph = build_graph(model or chat_model(), build_tools(self.ctx))
         self.messages: list[AnyMessage] = []
 

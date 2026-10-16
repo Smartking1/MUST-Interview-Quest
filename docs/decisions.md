@@ -69,3 +69,14 @@ Places where policy.md is silent or ambiguous, and how the engine reads them. Ea
 ## 2026-10-16: The malicious model test bypasses the prompt entirely
 - Decision: `tests/test_malicious_model.py` calls every tool with adversarial arguments, unverified and verified, across every seeded order. If deleting the system prompt could make the agent unsafe, this test would fail.
 - Finding while building it: the first version only verified as the owner of HM-1001. Once HM-1001 was cancelled, the executor's R7 re-check blocked every later payout, so a deliberately broken policy engine (deny turned into pay) went undetected. Added a scenario on orders where policy pays nothing (HM-1007, HM-1017), which catches it. The layered defense worked, but it hid a gap in the test.
+
+## 2026-10-16: Human approvals use the same executor as policy decisions
+- Decision: approving an escalation in `/admin` creates a decision signed with issuer `human:<name>` and sends it through `Executor.execute`, the only path to money. A human can override policy limits like R8, but gets the same replay protection and the same live R7 cap: nobody, human or model, can refund more than was paid. Tested: a $10,000 human approval on a $159 order is rejected.
+- No auth system (directive section 12). `/admin` requires a name so every decision is attributable. Stated as a limitation.
+
+## 2026-10-16: Demo seeds relative to the real clock; evals pin the clock
+- Decision: the running app seeds with today's date so "delivered 10 days ago" reads naturally and signed decisions expire in real time. Evals and tests pin `FROZEN_NOW` to `SEED_NOW` so every run is identical.
+
+## 2026-10-16: Chat UI sends one message to both agents side by side
+- Decision: the chat page has Trusted, Baseline and Side by side modes. The demo needs the same attack against both agents in one frame. The baseline pane is labelled unsafe in the UI.
+- The API takes JSON only. Image upload (first on the cut list) will send base64 in JSON, which avoids adding `python-multipart`.

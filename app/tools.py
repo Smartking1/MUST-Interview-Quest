@@ -19,6 +19,8 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app import retrieval
 from app.clock import now
+from app.escalations import create_escalation, money
+from app.escalations import describe_order as _describe_order
 from app.executor import ExecutionRejected, Executor
 from app.gateway import FakeGateway
 from app.models import Customer, Escalation, Order, Return
@@ -46,10 +48,6 @@ def decision_secret() -> bytes:
 _PROCESS_SECRET = secrets.token_bytes(32)
 
 
-def money(cents: int) -> str:
-    return f"${cents / 100:,.2f}"
-
-
 @dataclass
 class ConversationContext:
     """Server-side state for one conversation. The model cannot write to it directly."""
@@ -62,8 +60,8 @@ class ConversationContext:
     escalation_ids: list[int] = field(default_factory=list)
 
 
-def make_context(sessions: sessionmaker[Session]) -> ConversationContext:
-    return ConversationContext(sessions, Executor(sessions, FakeGateway("trusted"), decision_secret()))
+def make_context(sessions: sessionmaker[Session], executor: Executor | None = None) -> ConversationContext:
+    return ConversationContext(sessions, executor or Executor(sessions, FakeGateway("trusted"), decision_secret()))
 
 
 # --------------------------------------------------------------- helpers
@@ -76,44 +74,11 @@ def _verified_order(ctx: ConversationContext, s: Session, order_number: str) -> 
     return find_order(s, number)
 
 
-def _describe_order(order: Order) -> str:
-    lines = [
-        f"Order {order.order_number}: status {order.status}, paid {money(order.paid_cents)}.",
-        f"Shipping address: {order.shipping_address}.",
-    ]
-    if order.delivered_at:
-        lines.append(f"Delivered on {order.delivered_at.date().isoformat()}.")
-    elif order.shipped_at:
-        lines.append(f"Shipped on {order.shipped_at.date().isoformat()}.")
-    for i in sorted(order.items, key=lambda i: i.id):
-        flag = ", final sale" if i.final_sale else ""
-        lines.append(f"- line_item_id {i.id}: {i.name} ({i.category}), {i.qty} x {money(i.price_cents)}{flag}")
-    return "\n".join(lines)
-
-
 def _escalate(ctx: ConversationContext, s: Session, order: Order | None, request: str,
-              rule_ids: tuple[str, ...], reason: str, proposed: int | None = None) -> Escalation:
-    """Invariant 10: the summary is built from data so a human can act in under 30 seconds."""
-    customer = s.get(Customer, order.customer_id) if order else (
-        s.get(Customer, ctx.customer_id) if ctx.customer_id else None)
-    who = f"{customer.name} <{customer.email}>" if customer else "unverified customer"
-    parts = [
-        f"Customer: {who}",
-        f"Order: {_describe_order(order)}" if order else "Order: none verified",
-        f"Request: {request}",
-        f"Customer's last message: {ctx.last_customer_message!r}",
-        f"Rules: {', '.join(rule_ids) or 'none'}",
-        f"Why escalated: {reason}",
-    ]
-    if proposed is not None:
-        parts.append(f"Amount policy would pay if approved: {money(proposed)}")
-    esc = Escalation(
-        customer_id=customer.id if customer else None, order_id=order.id if order else None,
-        request=request, rule_ids=list(rule_ids), reason=reason, summary="\n".join(parts),
-        proposed_amount_cents=proposed, status="open", created_at=now(),
-    )
-    s.add(esc)
-    s.flush()
+              rule_ids: tuple[str, ...], reason: str, proposed: int | None = None,
+              line_item_ids: tuple[int, ...] = ()) -> Escalation:
+    esc = create_escalation(s, order, request, rule_ids, reason, proposed, line_item_ids,
+                            customer_id=ctx.customer_id, last_message=ctx.last_customer_message)
     ctx.escalation_ids.append(esc.id)
     return esc
 
@@ -170,7 +135,8 @@ def build_tools(ctx: ConversationContext) -> dict[str, BaseTool]:
                 return NOT_VERIFIED
             d = evaluate_cancellation(order_snapshot(order), refund_history(s, order.customer_id), now())
             if d.outcome == Outcome.ESCALATE:
-                esc = _escalate(ctx, s, order, "Cancel order", d.rule_ids, d.reason, d.proposed_amount_cents)
+                esc = _escalate(ctx, s, order, "Cancel order", d.rule_ids, d.reason, d.proposed_amount_cents,
+                                d.line_item_ids)
                 s.commit()
                 return f"Not cancelled automatically: {d.reason} Passed to staff (case {esc.id}). Rules: {_rule_text(d.rule_ids)}."
             if d.outcome == Outcome.DENY:
@@ -213,7 +179,7 @@ def build_tools(ctx: ConversationContext) -> dict[str, BaseTool]:
                         f"decided when the return is received and inspected. Rules: {rules}.")
             if d.outcome == Outcome.ESCALATE:
                 esc = _escalate(ctx, s, order, f"{reason.value} for items {list(line_item_ids)}",
-                                d.rule_ids, d.reason, d.proposed_amount_cents)
+                                d.rule_ids, d.reason, d.proposed_amount_cents, d.line_item_ids)
                 s.commit()
                 return f"Passed to staff for review (case {esc.id}): {d.reason} Rules: {rules}."
             if d.outcome == Outcome.DENY:

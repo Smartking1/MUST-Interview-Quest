@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harbor Market Support</title>
+<style>
+  :root { --bg:#f6f7f9; --panel:#fff; --ink:#1d2330; --muted:#667085; --line:#e3e6ea;
+          --trusted:#1f6f4a; --unsafe:#b42318; --user:#e8eefc; --bot:#f2f4f7; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:14px 20px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0 auto 0 0; }
+  .modes button { border:1px solid var(--line); background:#fff; padding:6px 12px; cursor:pointer; font:inherit; }
+  .modes button:first-child { border-radius:6px 0 0 6px; } .modes button:last-child { border-radius:0 6px 6px 0; }
+  .modes button.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  header a { color:var(--muted); }
+  main { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:16px 20px; height:calc(100vh - 140px); }
+  main.single { grid-template-columns:1fr; }
+  .pane { background:var(--panel); border:1px solid var(--line); border-radius:10px; display:flex; flex-direction:column; min-height:0; }
+  .pane[hidden] { display:none; }
+  .pane h2 { margin:0; padding:10px 14px; font-size:14px; border-bottom:1px solid var(--line); }
+  .pane.trusted h2 { color:var(--trusted); } .pane.baseline h2 { color:var(--unsafe); }
+  .log { flex:1; overflow:auto; padding:12px 14px; display:flex; flex-direction:column; gap:8px; }
+  .msg { padding:8px 12px; border-radius:10px; max-width:85%; white-space:pre-wrap; }
+  .msg.user { background:var(--user); align-self:flex-end; }
+  .msg.bot { background:var(--bot); align-self:flex-start; }
+  .msg.err { background:#fde8e8; color:var(--unsafe); }
+  form { display:flex; gap:8px; padding:0 20px 16px; }
+  textarea { flex:1; font:inherit; padding:10px; border:1px solid var(--line); border-radius:8px; resize:none; height:52px; }
+  form button { padding:0 18px; font:inherit; border:0; border-radius:8px; background:var(--ink); color:#fff; cursor:pointer; }
+  details { padding:0 20px 8px; color:var(--muted); font-size:13px; }
+  @media (max-width: 760px) { main { grid-template-columns:1fr; height:auto; } .log { min-height:280px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Harbor Market Support</h1>
+  <div class="modes" role="group" aria-label="Agent">
+    <button data-mode="trusted" class="on">Trusted Support</button>
+    <button data-mode="both">Side by side</button>
+    <button data-mode="baseline">Baseline (unsafe)</button>
+  </div>
+  <button id="reset" title="New conversation">New chat</button>
+  <a href="/admin">Staff admin</a>
+</header>
+<details><summary>Demo orders (fictional)</summary><div id="orders"></div></details>
+<main id="main" class="single">
+  <section class="pane trusted"><h2>Trusted Support</h2><div class="log" id="log-trusted"></div></section>
+  <section class="pane baseline" hidden><h2>Baseline: conventional agent, unsafe, for comparison only</h2><div class="log" id="log-baseline"></div></section>
+</main>
+<form id="form">
+  <textarea id="input" placeholder="Type a message. Include your order number and email for order help." required></textarea>
+  <button>Send</button>
+</form>
+<script>
+const state = { mode: "trusted", ids: { trusted: null, baseline: null } };
+const panes = { trusted: document.querySelector(".pane.trusted"), baseline: document.querySelector(".pane.baseline") };
+
+function setMode(mode) {
+  state.mode = mode;
+  document.querySelectorAll(".modes button").forEach(b => b.classList.toggle("on", b.dataset.mode === mode));
+  panes.trusted.hidden = mode === "baseline";
+  panes.baseline.hidden = mode === "trusted";
+  document.getElementById("main").classList.toggle("single", mode !== "both");
+}
+document.querySelectorAll(".modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+
+function add(agent, cls, text) {
+  const log = document.getElementById("log-" + agent);
+  const el = document.createElement("div");
+  el.className = "msg " + cls;
+  el.textContent = text;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+  return el;
+}
+
+async function send(agent, message) {
+  add(agent, "user", message);
+  const pending = add(agent, "bot", "...");
+  try {
+    const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, agent, conversation_id: state.ids[agent] }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || r.statusText);
+    state.ids[agent] = data.conversation_id;
+    pending.textContent = data.reply;
+  } catch (e) {
+    pending.className = "msg err";
+    pending.textContent = "Error: " + e.message;
+  }
+}
+
+document.getElementById("form").onsubmit = e => {
+  e.preventDefault();
+  const input = document.getElementById("input");
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = "";
+  const agents = state.mode === "both" ? ["trusted", "baseline"] : [state.mode];
+  agents.forEach(a => send(a, message));
+};
+document.getElementById("input").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); document.getElementById("form").requestSubmit(); }
+});
+document.getElementById("reset").onclick = () => {
+  state.ids = { trusted: null, baseline: null };
+  document.querySelectorAll(".log").forEach(l => l.innerHTML = "");
+};
+
+fetch("/api/demo/customers").then(r => r.json()).then(rows => {
+  document.getElementById("orders").textContent =
+    rows.map(r => `${r.order_number}  ${r.email}  (${r.status})`).join("\n");
+  document.getElementById("orders").style.whiteSpace = "pre";
+}).catch(() => {});
+</script>
+</body>
+</html>

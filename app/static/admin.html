@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Staff Admin</title>
+<style>
+  :root { --bg:#f6f7f9; --panel:#fff; --ink:#1d2330; --muted:#667085; --line:#e3e6ea; --ok:#1f6f4a; --bad:#b42318; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:14px 20px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0 auto 0 0; }
+  header input { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:6px; }
+  main { padding:16px 20px; display:grid; gap:16px; max-width:1100px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  h2 { font-size:15px; margin:0 0 10px; }
+  .card { border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:10px; }
+  .card pre { white-space:pre-wrap; margin:0 0 8px; font:13px/1.4 ui-monospace, Menlo, monospace; }
+  button { font:inherit; padding:5px 12px; border-radius:6px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+  button.approve { background:var(--ok); color:#fff; border-color:var(--ok); }
+  button.deny { color:var(--bad); }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .row input[type=number] { width:120px; font:inherit; padding:4px 8px; border:1px solid var(--line); border-radius:6px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+  .baseline { color:var(--bad); font-weight:600; }
+  .muted { color:var(--muted); }
+  #flash { min-height:1.4em; }
+  @media (max-width: 640px) { table { font-size:12px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Support Staff Admin</h1>
+  <label>Your name <input id="admin" placeholder="Required to approve or deny"></label>
+  <button id="reset">Reset demo data</button>
+  <a href="/">Chat</a>
+</header>
+<main>
+  <div id="flash" class="muted"></div>
+  <section><h2>Escalations waiting for a decision</h2><div id="escalations" class="muted">Loading</div></section>
+  <section><h2>Returns waiting at the warehouse</h2><p class="muted">Record the condition on arrival. Policy decides the refund from what you record, not from what the customer said.</p><div id="returns" class="muted">Loading</div></section>
+  <section><h2>Payment ledger (every gateway call)</h2><table><thead><tr><th>Agent</th><th>Order</th><th>Amount</th><th>Gateway</th><th>Reference</th></tr></thead><tbody id="ledger"></tbody></table></section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const adminName = () => $("admin").value.trim();
+try { $("admin").value = localStorage.getItem("adminName") || ""; } catch (e) {}
+$("admin").onchange = () => { try { localStorage.setItem("adminName", adminName()); } catch (e) {} };
+
+async function post(url, body) {
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+  const data = await r.json();
+  $("flash").textContent = r.ok ? data.message : "Error: " + data.detail;
+  $("flash").style.color = r.ok ? "var(--ok)" : "var(--bad)";
+  load();
+}
+
+function el(tag, attrs, ...children) {
+  const e = document.createElement(tag);
+  Object.assign(e, attrs || {});
+  children.forEach(c => e.append(c));
+  return e;
+}
+
+async function load() {
+  const escs = await (await fetch("/api/admin/escalations")).json();
+  const box = $("escalations"); box.innerHTML = "";
+  if (!escs.length) box.textContent = "None.";
+  escs.forEach(e => {
+    const amount = el("input", { type: "number", min: "0", step: "0.01",
+      placeholder: "Amount $", value: e.proposed_amount_cents ? (e.proposed_amount_cents / 100).toFixed(2) : "" });
+    const approve = el("button", { className: "approve", textContent: "Approve refund",
+      onclick: () => post(`/api/admin/escalations/${e.id}/approve`,
+        { admin: adminName(), amount_cents: amount.value ? Math.round(parseFloat(amount.value) * 100) : null }) });
+    const deny = el("button", { className: "deny", textContent: "Deny",
+      onclick: () => post(`/api/admin/escalations/${e.id}/deny`, { admin: adminName() }) });
+    box.append(el("div", { className: "card" }, el("pre", { textContent: `Case ${e.id}\n${e.summary}` }),
+      el("div", { className: "row" }, amount, approve, deny)));
+  });
+
+  const rets = await (await fetch("/api/admin/returns")).json();
+  const rbox = $("returns"); rbox.innerHTML = "";
+  if (!rets.length) rbox.textContent = "None.";
+  rets.forEach(r => {
+    const opened = el("input", { type: "checkbox" });
+    const tags = el("input", { type: "checkbox" });
+    const receive = el("button", { textContent: "Mark received",
+      onclick: () => post(`/api/admin/returns/${r.id}/receive`, { opened: opened.checked, tags_attached: tags.checked }) });
+    rbox.append(el("div", { className: "card row" },
+      el("span", { textContent: `${r.order_number}: ${r.item} (${r.category}, ${r.price})` }),
+      el("label", {}, opened, " Opened"), el("label", {}, tags, " Tags attached"), receive));
+  });
+
+  const rows = await (await fetch("/api/admin/ledger")).json();
+  const tb = $("ledger"); tb.innerHTML = "";
+  if (!rows.length) tb.append(el("tr", {}, el("td", { colSpan: 5, className: "muted", textContent: "No payments yet." })));
+  rows.forEach(g => tb.append(el("tr", {},
+    el("td", { className: g.agent === "baseline" ? "baseline" : "", textContent: g.agent }),
+    el("td", { textContent: g.order_number }), el("td", { textContent: g.amount }),
+    el("td", { textContent: g.gateway }), el("td", { textContent: g.ref }))));
+}
+
+$("reset").onclick = () => { if (confirm("Reset all demo data to the seed?")) post("/api/admin/reset"); };
+load();
+</script>
+</body>
+</html>

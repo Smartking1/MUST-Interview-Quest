@@ -52,6 +52,7 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
   - Eval harness: `evals/datasets/legit.jsonl` (20), `evals/datasets/attacks.jsonl` (22), `evals/scorers.py`, `evals/user_sim.py`, `evals/tasks.py`. Stub agent run committed to `evals/logs/` and `docs/results.md`.
   - `policy/faq.md`, `app/llm.py`, `app/retrieval.py`, `app/tools.py`, `app/graph.py` (router plus three nodes), `app/graph_baseline.py` (labelled unsafe).
   - Tests grew from 65 to 117, including the malicious model test and scripted-model graph tests. All keyless.
+  - Day 3 product surface (ahead of keys): `app/main.py` (FastAPI), `app/admin.py` (approve and deny escalations, warehouse receipt of returns), `app/escalations.py`, `app/static/index.html` (Trusted, Baseline, Side by side), `app/static/admin.html` (escalation queue, returns, payment ledger), `.env.example`. 123 tests. Server smoke-tested: pages load, admin endpoints work, chat returns a clear 503 until a model is configured.
 - Kept: all of the above.
 - Rejected or changed, and why:
   - AI did not write Day 1 content: nothing in the repo or session records it, and the directive forbids writing anything that did not happen.

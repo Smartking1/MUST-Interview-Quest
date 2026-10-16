@@ -6,6 +6,7 @@ gateway is written to the gateway_ledger table, which the eval scorers read.
 
 from __future__ import annotations
 
+import os
 import uuid
 from dataclasses import dataclass
 from typing import Protocol
@@ -64,3 +65,11 @@ class FakeGateway:
         ))
         session.flush()
         return GatewayResult(ref, amount_cents)
+
+
+def gateway_from_env() -> PaymentGateway:
+    """PAYMENT_GATEWAY=fake (default). Real gateways are added with test keys (Day 3)."""
+    kind = os.environ.get("PAYMENT_GATEWAY", "fake")
+    if kind == "fake":
+        return FakeGateway("trusted")
+    raise GatewayError(f"Unknown or not yet configured PAYMENT_GATEWAY {kind!r}")
