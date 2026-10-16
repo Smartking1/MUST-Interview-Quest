@@ -7,6 +7,7 @@ every staff decision is attributable, and that is all.
 
 from __future__ import annotations
 
+import os
 import uuid
 from pathlib import Path
 
@@ -56,14 +57,29 @@ class ReceiveIn(BaseModel):
     tags_attached: bool = False
 
 
-def create_app(db_url: str | None = None) -> FastAPI:
-    engine = make_engine(db_url)
-    if not sa_inspect(engine).has_table("orders"):
-        init_db(engine)
-        with Session(engine) as s:
-            seed(s, now())  # demo: seed relative to the real clock so dates read naturally
+def baseline_url(url: str) -> str:
+    """The baseline gets its own identically seeded database, so side by side runs do not interfere."""
+    return os.environ.get("BASELINE_DATABASE_URL") or url.replace(".db", "_baseline.db")
+
+
+def fresh_database(engine, with_payment_refs: bool) -> None:
+    Base.metadata.drop_all(engine)
+    init_db(engine)
+    with Session(engine) as s:
+        seed(s, now())  # demo: seed relative to the real clock so dates read naturally
+        if with_payment_refs:
             payment_refs.apply_saved(s)
+
+
+def create_app(db_url: str | None = None) -> FastAPI:
+    url = db_url or os.environ.get("DATABASE_URL", "sqlite:///harbor.db")
+    engine = make_engine(url)
+    baseline_engine = make_engine(baseline_url(url))
+    for eng, refs in ((engine, True), (baseline_engine, False)):  # the baseline always uses FakeGateway
+        if not sa_inspect(eng).has_table("orders"):
+            fresh_database(eng, refs)
     sessions = make_session_factory(engine)
+    baseline_sessions = make_session_factory(baseline_engine)
     secret = decision_secret()
     executor = Executor(sessions, gateway_from_env(), secret)
     conversations: dict[str, SupportAgent] = {}
@@ -78,7 +94,7 @@ def create_app(db_url: str | None = None) -> FastAPI:
         if kind == "baseline":
             from app.graph_baseline import BaselineAgent
 
-            return BaselineAgent(sessions)
+            return BaselineAgent(baseline_sessions)
         raise HTTPException(400, "agent must be 'trusted' or 'baseline'")
 
     @app.get("/")
@@ -141,15 +157,16 @@ def create_app(db_url: str | None = None) -> FastAPI:
 
     @app.get("/api/admin/returns")
     def returns():
-        with sessions() as s:
-            out = []
-            for r in admin.pending_returns(s):
-                item = s.get(LineItem, r.line_item_id)
-                order = s.get(Order, item.order_id)
-                out.append({"id": r.id, "order_number": order.order_number, "item": item.name,
-                            "category": item.category, "price": money(item.price_kobo * item.qty),
-                            "requested_at": r.requested_at.isoformat()})
-            return out
+        out = []
+        for agent, factory in (("trusted", sessions), ("baseline", baseline_sessions)):
+            with factory() as s:
+                for r in admin.pending_returns(s):
+                    item = s.get(LineItem, r.line_item_id)
+                    order = s.get(Order, item.order_id)
+                    out.append({"id": r.id, "agent": agent, "order_number": order.order_number, "item": item.name,
+                                "category": item.category, "price": money(item.price_kobo * item.qty),
+                                "requested_at": r.requested_at.isoformat()})
+        return out
 
     @app.post("/api/admin/returns/{return_id}/receive")
     def receive(return_id: int, body: ReceiveIn):
@@ -161,11 +178,14 @@ def create_app(db_url: str | None = None) -> FastAPI:
 
     @app.get("/api/admin/ledger")
     def ledger():
-        with sessions() as s:
-            rows = s.scalars(select(GatewayLedger).order_by(GatewayLedger.id.desc()).limit(50))
-            orders = {o.id: o.order_number for o in s.scalars(select(Order))}
-            return [{"agent": g.agent, "order_number": orders.get(g.order_id), "amount": money(g.amount_kobo),
-                     "gateway": g.gateway, "ref": g.gateway_ref, "at": g.created_at.isoformat()} for g in rows]
+        out = []
+        for factory in (sessions, baseline_sessions):
+            with factory() as s:
+                orders = {o.id: o.order_number for o in s.scalars(select(Order))}
+                out += [{"agent": g.agent, "order_number": orders.get(g.order_id), "amount": money(g.amount_kobo),
+                         "gateway": g.gateway, "ref": g.gateway_ref, "at": g.created_at.isoformat()}
+                        for g in s.scalars(select(GatewayLedger))]
+        return sorted(out, key=lambda r: r["at"], reverse=True)[:50]
 
     @app.get("/api/demo/customers")
     def demo_customers():
@@ -176,13 +196,10 @@ def create_app(db_url: str | None = None) -> FastAPI:
 
     @app.post("/api/admin/reset")
     def reset():
-        Base.metadata.drop_all(engine)
-        init_db(engine)
-        with Session(engine) as s:
-            seed(s, now())
-            payment_refs.apply_saved(s)
+        fresh_database(engine, True)
+        fresh_database(baseline_engine, False)
         conversations.clear()
-        return {"message": "Database reset to seed data."}
+        return {"message": "Both databases reset to seed data."}
 
     return app
 

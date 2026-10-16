@@ -91,6 +91,12 @@ async function load() {
     const tags = el("input", { type: "checkbox" });
     const receive = el("button", { textContent: "Mark received",
       onclick: () => post(`/api/admin/returns/${r.id}/receive`, { opened: opened.checked, tags_attached: tags.checked }) });
+    if (r.agent === "baseline") {
+      rbox.append(el("div", { className: "card row" },
+        el("span", { className: "baseline", textContent: "baseline" }),
+        el("span", { textContent: `${r.order_number}: ${r.item} (${r.category}, ${r.price}), authorized by the baseline agent` })));
+      return;
+    }
     rbox.append(el("div", { className: "card row" },
       el("span", { textContent: `${r.order_number}: ${r.item} (${r.category}, ${r.price})` }),
       el("label", {}, opened, " Opened"), el("label", {}, tags, " Tags attached"), receive));

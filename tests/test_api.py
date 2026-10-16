@@ -28,7 +28,7 @@ def test_unknown_agent_rejected(client):
 
 
 def test_receiving_opened_return_refunds_with_restocking_fee(client):
-    [ret] = client.get("/api/admin/returns").json()  # HM-1008 keyboard is seeded as authorized
+    [ret] = [r for r in client.get("/api/admin/returns").json() if r["agent"] == "trusted"]  # HM-1008 seeded
     assert ret["order_number"] == "HM-1008"
     r = client.post(f"/api/admin/returns/{ret['id']}/receive", json={"opened": True})
     assert r.status_code == 200 and r.json()["amount_kobo"] == 10_200_000
@@ -85,3 +85,23 @@ def test_saved_payment_refs_survive_a_demo_reset(tmp_path, frozen_now, monkeypat
     client.post("/api/admin/reset")
     with make_session_factory(make_engine(url))() as s:
         assert find_order(s, "HM-1005").gateway_payment_ref == "harbor-hm-1005-abc"
+
+
+def test_baseline_has_its_own_database(client, tmp_path):
+    """Side by side: a baseline cancellation must not change the order Trusted sees."""
+    from app.db import make_engine, make_session_factory
+    from app.gateway import FakeGateway
+    from app.repository import find_order
+
+    base = make_session_factory(make_engine(f"sqlite:///{tmp_path / 'api_baseline.db'}"))
+    with base() as s:
+        order = find_order(s, "HM-1002")
+        order.status = "cancelled"
+        FakeGateway("baseline").refund(s, order_id=order.id, payment_ref=None, amount_kobo=42_350_000,
+                                       idempotency_key=None)
+        s.commit()
+    main = make_session_factory(make_engine(f"sqlite:///{tmp_path / 'api.db'}"))
+    with main() as s:
+        assert find_order(s, "HM-1002").status == "placed"
+    [entry] = client.get("/api/admin/ledger").json()
+    assert entry["agent"] == "baseline" and entry["amount"] == "₦423,500.00"

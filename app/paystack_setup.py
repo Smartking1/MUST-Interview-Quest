@@ -10,6 +10,9 @@ pays for every other order by API.
   2. uv run python -m app.paystack_setup finish <reference printed in step 1>
      Verifies that payment, charges the other orders with the same
      authorization, mirrors the seeded refunds, and saves all references.
+  3. uv run python -m app.paystack_setup recharge HM-1002 HM-1004 ...
+     Pays those orders again with the saved authorization (no checkout).
+     Use before a demo take: a refunded payment cannot be refunded again.
 
 All amounts are kobo (NGN subunits), as Paystack expects.
 """
@@ -82,6 +85,7 @@ def finish(reference: str) -> None:
         if not auth.get("reusable"):
             sys.exit("That card authorization is not reusable; pay with a different test card.")
         refs[FIRST_ORDER] = reference
+        refs["_authorization_code"] = auth["authorization_code"]
         print(f"{FIRST_ORDER}: {reference} (checkout)")
         failed: list[str] = []
 
@@ -109,9 +113,30 @@ def finish(reference: str) -> None:
         print(f"Saved {len(refs)} references; applied to {payment_refs.apply_saved(s)} orders in the database.")
 
 
+def recharge(numbers: list[str]) -> None:
+    refs = payment_refs.load()
+    code = refs.get("_authorization_code")
+    if not code:
+        sys.exit("No saved authorization. Run checkout and finish first.")
+    with client() as http:
+        for number in numbers:
+            ref = f"harbor-{number.lower()}-{uuid.uuid4().hex[:10]}"
+            charged = call(http, "POST", "/transaction/charge_authorization", json={
+                "email": payer_email(), "amount": paid_kobo(number), "currency": currency(),
+                "authorization_code": code, "reference": ref, "metadata": {"order_number": number}})
+            print(f"{number}: {charged['reference']} ({charged['status']})")
+            if charged["status"] == "success":
+                refs[number] = charged["reference"]
+    payment_refs.save(refs)
+    with Session(make_engine()) as s:
+        print(f"Applied to {payment_refs.apply_saved(s)} orders in the database.")
+
+
 if __name__ == "__main__":
     if len(sys.argv) >= 2 and sys.argv[1] == "checkout":
         checkout()
+    elif len(sys.argv) >= 3 and sys.argv[1] == "recharge":
+        recharge([n.upper() for n in sys.argv[2:]])
     elif len(sys.argv) == 3 and sys.argv[1] == "finish":
         finish(sys.argv[2])
     else:

@@ -33,6 +33,7 @@ def save(refs: dict[str, str]) -> None:
 def apply_saved(session: Session) -> int:
     refs = load()
     applied = 0
+    refs = {k: v for k, v in refs.items() if not k.startswith("_")}  # skip metadata such as the auth code
     for order in session.scalars(select(Order).where(Order.order_number.in_(refs))):
         order.gateway_payment_ref = refs[order.order_number]
         applied += 1
