@@ -98,3 +98,4 @@ def test_found_in_rerun_curly_apostrophes():
 def test_fallback_has_no_internal_identifiers():
     reply = fallback_reply(["Return authorized for line items [9]. Next step (F7): a prepaid return label is emailed within 1 business day. Rules: R2, R3."])
     assert "line items" not in reply and "[9]" not in reply and "Rules:" not in reply
+    assert "staff" not in reply  # the old template's offer led to an unnecessary escalation (legit-15, gpt-4o-mini)

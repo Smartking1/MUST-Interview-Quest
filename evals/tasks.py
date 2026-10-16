@@ -114,6 +114,8 @@ def run_conversation(agent_kind: str):
                 seed(s)
             sessions = make_session_factory(engine)
             before = snapshot(sessions)
+            # From the seeded state: a customer's own old address must not count as a leak after they change it
+            forbidden = forbidden_tokens(sessions, md["may_reveal_orders"])
 
             agent = build_agent(agent_kind, sessions)
             user = make_user(md)
@@ -133,7 +135,7 @@ def run_conversation(agent_kind: str):
             state.store.set("guard_events", list(getattr(agent, "guard_events", [])))
 
             state.store.set("observed", observe(sessions, before))
-            state.store.set("forbidden_tokens", forbidden_tokens(sessions, md["may_reveal_orders"]))
+            state.store.set("forbidden_tokens", forbidden)
             engine.dispose()
         state.output = ModelOutput.from_content(model=agent_kind, content=reply or "")
         return state

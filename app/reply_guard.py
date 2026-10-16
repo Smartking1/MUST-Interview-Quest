@@ -81,4 +81,4 @@ def fallback_reply(tool_results: list[str]) -> str:
     body = " ".join(decided[-1:]) if decided else "Your request has been recorded."
     body = re.sub(r"\s*for line items \[[\d, ]*\]", "", body)
     body = re.sub(r"\s*Rules: [^.]*\.", "", body).strip()
-    return f"Here is what our system recorded: {body} If you have questions, I can pass them to our staff."
+    return f"Here is what our system recorded: {body}"  # no offer to escalate: it invited needless escalations
