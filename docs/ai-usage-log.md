@@ -6,12 +6,12 @@ Fields marked **[Kingsley to fill]** cover work done outside the repo that only 
 
 ## Day 1, 2026-10-14
 - Goal: choose the problem and write the working directive (CLAUDE.md).
-- What Kingsley directed: **[Kingsley to fill]**
-- What AI produced: **[Kingsley to fill: which AI tools were used to draft CLAUDE.md, and roughly how many drafts]**
-- Kept: **[Kingsley to fill]**
-- Rejected or changed, and why: **[Kingsley to fill]**
-- Failures hit: **[Kingsley to fill]**
-- Time spent: **[Kingsley to fill]**
+- What Kingsley directed: worked out the problem and the solution with Claude (web version), producing CLAUDE.md.
+- What AI produced: drafts of CLAUDE.md in Claude (web version). Source: Kingsley, recorded on 2026-10-16.
+- Kept: CLAUDE.md, the file this repository was built from.
+- Rejected or changed, and why: not recorded.
+- Failures hit: not recorded.
+- Time spent: about 5 hours (Kingsley's estimate).
 - Evidence in repo: none from this day. The repo was initialised on Day 2. The directive arrived as a file named `CLAUDE (9).md`, last modified 2026-10-15 09:07.
 
 ## Day 2, 2026-10-15, session 1, about 09:07 to 09:45

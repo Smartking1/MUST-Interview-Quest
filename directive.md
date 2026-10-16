@@ -314,7 +314,7 @@ Appended every session. Before Day 5 ends, verify every day has entries and that
 
 Every change below is recorded with its reasons in `docs/decisions.md`.
 
-**Day 1 (2026-10-14).** The directive was written: the problem, the audit, the store policy, the architecture invariants, the five-day plan. **[Kingsley to fill: how the directive was drafted and what changed between drafts.]**
+**Day 1 (2026-10-14).** The directive was written with Claude (web version) over about five hours: the problem, the audit, the store policy, the architecture invariants, the five-day plan.
 
 **Day 2 (2026-10-15).**
 - Returns are authorized first and refunded when the warehouse records the item's condition. The customer's description is never evidence (a reading of R2 and R3 the policy left open).

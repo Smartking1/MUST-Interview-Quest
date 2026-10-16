@@ -22,7 +22,7 @@ The habit I had to catch myself in: when Trusted promised a customer a full refu
 
 ## How I used AI
 
-I used Claude Code as the builder throughout, directed by a written directive (`directive.md`). [Day 1: how the directive was drafted.] From Day 2, AI wrote the code, tests, eval suites, audit adapters and documents; I directed scope, made the decisions only I could make, and reviewed. The log records them: building the skeleton before the audit; switching from Stripe to Paystack because Stripe is not available in Nigeria; repricing the store in naira, overruling AI's recommendation to keep dollars; and asking for the log to be backfilled only with what could be evidenced.
+On Day 1 I spent about five hours with Claude (web version) working out the problem and the solution, which became the directive (`directive.md`). From Day 2, Claude Code wrote the code, tests, eval suites, audit adapters and documents; I directed scope, made the decisions only I could make, and reviewed. The log records them: building the skeleton before the audit; switching from Stripe to Paystack because Stripe is not available in Nigeria; repricing the store in naira, overruling AI's recommendation to keep dollars; and asking for the log to be backfilled only with what could be evidenced.
 
 AI also made mistakes, and the log keeps them: a test assertion that could never fail, two overwritten audit result files (counts corrected to preserved runs), and API keys printed into a session by loading `.env` with the shell. Each became a working rule in the directive.
 
