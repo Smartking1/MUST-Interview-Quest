@@ -101,4 +101,4 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Kept: all of the above. The ₦300,000 limit is AI's choice, flagged for Kingsley to confirm.
 - Rejected or changed, and why: AI's earlier recommendation (keep USD, send one to one) was overruled by Kingsley.
 - Failures hit: the first bulk rename did nothing because zsh does not split an unquoted variable into separate file arguments; rerun through xargs. 15 tests failed after repricing, all on hard-coded dollar-era amounts, as expected; updated, with R8 tests tied to the limit constant. One test kept passing for a meaningless reason after repricing and was rewritten. R8 off-by-one mutation re-checked: caught (3 failures).
-- Time spent: (to update at end of session)
+- Time spent: session ended about 08:55 WAT (system clock; start not recorded). **[Kingsley to confirm]**
