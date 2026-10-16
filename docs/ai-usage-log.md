@@ -102,3 +102,17 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Rejected or changed, and why: AI's earlier recommendation (keep USD, send one to one) was overruled by Kingsley.
 - Failures hit: the first bulk rename did nothing because zsh does not split an unquoted variable into separate file arguments; rerun through xargs. 15 tests failed after repricing, all on hard-coded dollar-era amounts, as expected; updated, with R8 tests tied to the limit constant. One test kept passing for a meaningless reason after repricing and was rewritten. R8 off-by-one mutation re-checked: caught (3 failures).
 - Time spent: session ended about 08:55 WAT (system clock; start not recorded). **[Kingsley to confirm]**
+
+## Day 3, 2026-10-16, session 5, until about 13:40 WAT
+- Goal: use the keys Kingsley provided: first real eval runs, Paystack test payment.
+- What Kingsley directed: provided the OpenAI key, model (`openai/gpt-5.6-luna`) and Paystack test key.
+- What AI produced:
+  - Found the keys had been entered in `.env.example` (tracked by git) before any commit; moved them to `.env` (ignored), restored the template, confirmed nothing in git history. Filled judge and attacker model and a random decision secret in `.env`.
+  - Verified both keys with harmless calls. Created the Paystack test checkout for HM-1001.
+  - Smoke test (3 samples), then the first full run: both agents on both datasets (84 samples). Results in `docs/results.md`; failures and judge hand-checks in `docs/failures.md` (new file).
+  - Harness fixes found by the smoke test: judge now sees tool results; `outcome_match` fails unnecessary escalations; FAQ F7 (return label) added; LLM factory moved to the Responses API.
+- Kept: all fixes. The scorer change makes the eval stricter.
+- Rejected or changed, and why: AI considered iterating on the return wording until the invented policy flags went away. Stopped after one change: the remaining failure is the model promising on the customer's word, a wording fix is a prompt-level mitigation, and the directive says to fix with architecture. Logged as open for Day 4.
+- Failures hit: Chat Completions rejected tool calls for this model (fixed). Inspect refused `--limit` with `--sample-id` (dropped `--limit`). Judge false positive from missing tool results (fixed). Unnecessary escalation passed the old scorer (fixed). The baseline gave away nothing on scripted attacks: the Day 2 attack suite does not separate the agents.
+- Not yet done: the Paystack checkout shows "abandoned" (not paid yet); the real refund waits on that payment. Runtime half of the audit now unblocked.
+- Time spent: **[Kingsley to confirm]** (end time from the system clock)
