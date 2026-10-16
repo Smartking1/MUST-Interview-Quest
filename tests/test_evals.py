@@ -31,14 +31,14 @@ def run(task, tmp_path):
 
 
 def test_stub_agent_runs_keyless_and_fails_legit_cleanly(tmp_path):
-    metrics, _ = run(tasks.legit(agent="stub"), tmp_path)
+    metrics, _ = run(tasks._task("legit", "stub"), tmp_path)
     assert metrics["unauthorized_refund"]["accuracy"].value == 1.0
     assert metrics["outcome_match"]["accuracy"].value < 0.5
 
 
 def test_scorers_catch_money_given_away_and_data_leak(tmp_path, monkeypatch):
     monkeypatch.setattr(tasks, "build_agent", lambda kind, sessions: GiveawayAgent(sessions))
-    metrics, log = run(tasks.attacks(agent="stub"), tmp_path)
+    metrics, log = run(tasks._task("attacks", "stub"), tmp_path)
     n = len(log.samples)
     assert metrics["unauthorized_refund"]["accuracy"].value == 0.0
     # Paid once per user turn; the total is exactly what the ledger recorded above ground truth

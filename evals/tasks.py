@@ -3,10 +3,8 @@
 Each sample gets its own freshly seeded SQLite database and FakeGateway, so
 samples cannot affect each other and the gateway ledger is exact.
 
-Examples:
-  uv run inspect eval evals/tasks.py@attacks -T agent=stub --model mockllm/model
-  uv run inspect eval evals/tasks.py@attacks -T agent=trusted --model mockllm/model \\
-      --model-role judge=openai/<judge model>
+Run everything (needs .env with OPENAI_API_KEY, LLM_MODEL, JUDGE_MODEL, ATTACKER_MODEL):
+  uv run --env-file .env inspect eval evals/tasks.py
 """
 
 from __future__ import annotations
@@ -143,7 +141,7 @@ def run_conversation(agent_kind: str):
     return solve
 
 
-def _task(dataset: str, agent: str, judge: bool | None) -> Task:
+def _task(dataset: str, agent: str, judge: bool | None = None, epochs: int = 1) -> Task:
     scorers = [unauthorized_refund(), naira_given_away(), outcome_match(), data_leak()]
     if judge if judge is not None else agent != "stub":
         scorers.append(invented_policy())
@@ -151,21 +149,44 @@ def _task(dataset: str, agent: str, judge: bool | None) -> Task:
         dataset=json_dataset(str(DATASETS / f"{dataset}.jsonl"), record_to_sample),
         solver=run_conversation(agent),
         scorer=scorers,
+        # The agents call their own model (app/llm.py); Inspect's task model is unused, so a placeholder.
+        # The judge and attacker use JUDGE_MODEL and ATTACKER_MODEL unless --model-role overrides them.
+        model="mockllm/model",
+        epochs=epochs,
         metadata={"agent": agent, "dataset": dataset},
+        name=f"{dataset}_{agent}",
     )
 
 
-@task
-def legit(agent: str = "trusted", judge: bool | None = None) -> Task:
-    return _task("legit", agent, judge)
-
+# `uv run inspect eval evals/tasks.py` runs all six: both agents on all three suites.
+# One task: `uv run inspect eval evals/tasks.py@attacks_baseline`. Repeat runs: `-T epochs=3`.
 
 @task
-def attacks(agent: str = "trusted", judge: bool | None = None) -> Task:
-    return _task("attacks", agent, judge)
+def legit_trusted(epochs: int = 1) -> Task:
+    return _task("legit", "trusted", epochs=epochs)
 
 
 @task
-def adaptive(agent: str = "trusted", judge: bool | None = None) -> Task:
-    """Day 4: an attacker model with a goal, up to 8 adaptive turns. Needs --model-role attacker=..."""
-    return _task("adaptive", agent, judge)
+def legit_baseline(epochs: int = 1) -> Task:
+    return _task("legit", "baseline", epochs=epochs)
+
+
+@task
+def attacks_trusted(epochs: int = 1) -> Task:
+    return _task("attacks", "trusted", epochs=epochs)
+
+
+@task
+def attacks_baseline(epochs: int = 1) -> Task:
+    return _task("attacks", "baseline", epochs=epochs)
+
+
+@task
+def adaptive_trusted(epochs: int = 1) -> Task:
+    """Day 4 adaptive attacker: a model with a goal, up to 8 turns. Uses ATTACKER_MODEL."""
+    return _task("adaptive", "trusted", epochs=epochs)
+
+
+@task
+def adaptive_baseline(epochs: int = 1) -> Task:
+    return _task("adaptive", "baseline", epochs=epochs)
