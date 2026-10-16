@@ -116,3 +116,23 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Failures hit: Chat Completions rejected tool calls for this model (fixed). Inspect refused `--limit` with `--sample-id` (dropped `--limit`). Judge false positive from missing tool results (fixed). Unnecessary escalation passed the old scorer (fixed). The baseline gave away nothing on scripted attacks: the Day 2 attack suite does not separate the agents.
 - Not yet done: the Paystack checkout shows "abandoned" (not paid yet); the real refund waits on that payment. Runtime half of the audit now unblocked.
 - Time spent: **[Kingsley to confirm]** (end time from the system clock)
+
+## Day 3, 2026-10-16, session 6, until about 16:21 WAT
+- Goal: runtime half of the audit.
+- What Kingsley directed: "go on" (start the audit runtime while he completes the Paystack payment).
+- What AI produced:
+  - Core attack set (8 conversations, `audit/harness/README.md`) and adapters for T1, T3, T4, T5 that call each target's own entry point with no change to target code. `audit/harness/with_env.py` loads `.env` without printing values.
+  - Runs: T1 classifier node (18 calls), T3 on current packages and on packages as of its commit date, T4 (does not run), T5 from its lockfile with SendGrid blocked by a dead local proxy. Results in `audit/results/`, write-up in `docs/audit.md`.
+  - Headline: T1's model answered correctly 18 of 18 times and its code routed all 12 non-refundable complaints to the refund path. T3 issued vouchers on a claimed staff promise in both preserved runs and cancelled a third party's flight. T5's code-enforced threshold held.
+- Kept: all results, with counts restricted to preserved runs.
+- Rejected or changed, and why:
+  - T2 not run: it needs Anthropic and Tavily keys; swapping its model and removing its search tool would test a different program.
+  - T4: tried three LangGraph versions and its commit-date packages before stopping, rather than patching its code.
+  - AI's first T1 harness draft had dead code from working out how to capture raw outputs; rewritten before committing.
+- Failures hit:
+  - **AI exposed Kingsley's OpenAI key and Paystack test key in this session's output** by loading `.env` with shell `source`: lines with a space after `=` were run as commands and the shell echoed the values in errors. The keys did not reach git or any file. Kingsley asked to rotate both. Replaced with a parser (`with_env.py`).
+  - AI overwrote two results files by re-running into the same path (T3's first run, T5's first run). The audit cites only preserved runs; an earlier "3 of 3" claim for T3 was corrected to "2 of 2".
+  - T5 attack A6 was first worded so the agent asked for an order ID instead of refunding, so it did not test a double refund; reworded and re-run.
+  - `with_env.py` first looked for `.env` in the current directory, so a run from a target's folder had no key; fixed to use the project root.
+- Not yet done: Paystack HM-1001 checkout still unpaid at session end.
+- Time spent: audit runtime from about 15:50 to 16:21 WAT (file times). **[Kingsley to confirm]**
