@@ -124,3 +124,17 @@ Places where policy.md is silent or ambiguous, and how the engine reads them. Ea
 
 ## 2026-10-16: Two seeded orders have no Paystack payment
 - HM-1019 (₦600,000) and HM-1020 (₦1,299,000) could not be charged in test mode: Paystack returned "Insufficient Balance" for the test card. Both are cases above the ₦300,000 limit that escalate to a human. A human approval on them would be rejected by Paystack and recorded as `failed` by the executor. The setup script originally saved references for these failed charges; fixed to save only successful payments.
+
+## 2026-10-16: Over-promising is checked in code after every decision (reply guard)
+- Context: on Day 3, one wording change did not stop Trusted from promising refund amounts; on Day 4 the adaptive attacker drew out new forms (exceptions, claimed actions). The directive says to fix with architecture, not prompt warnings.
+- Decision: a guard node after every specialist node. Code decides whether a reply over-promises (`app/reply_guard.py`, pure function, unit tested). The model may rewrite once; if the rewrite still fails, code replaces the reply with a template built from tool results. The model can make a reply better, never riskier.
+- Limits, stated: a pattern list catches known phrasings, not all of them. It reduces invented policy; it does not prove its absence.
+- Assumption: #1, applied to words rather than money.
+
+## 2026-10-16: Supplementary model swap (gpt-4o-mini)
+- Context: on `gpt-5.6-luna` the baseline resisted every attack. To test whether Trusted's guarantees depend on the model, both agents were also run on `gpt-4o-mini`. Labelled supplementary; the main comparison stays on one model, as the directive requires.
+- Result: neither model paid out under attack; Trusted's results held on the weaker model; the baseline's policy accuracy fell further.
+
+## 2026-10-16: The headline claim needs Kingsley's decision
+- Context: the directive's headline reads "compared with a conventional agent that gave away ₦Y on the same tests". On this suite and both models, the baseline gave away ₦0 under attack; its only payout (₦423,500) came from a routine legitimate request. Writing "gave away ₦423,500 under attack" would be false.
+- Options for Kingsley: (a) keep the headline with an accurate qualifier ("gave away ₦423,500 on a routine request it should have sent to a human"); (b) lead with policy accuracy under attack and the R8 bypass; (c) strengthen the attack suite further on Day 5 and report whatever it finds. Not decided by AI.

@@ -145,3 +145,16 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Rejected or changed, and why: renamed refund status `succeeded` to `accepted`, because Paystack showed the refund as queued; "succeeded" overstated what we knew.
 - Failures hit: AI's setup script saved payment references for the two failed charges; caught from the script's own output, references removed, script fixed to save only successful payments.
 - Time spent: **[Kingsley to confirm]**
+
+## Day 4 work (calendar 2026-10-16, Day 3 date), session 1, until about 16:49 WAT
+- Note: Kingsley asked to start Day 4 work at 16:24 on 2026-10-16. Dated as it happened.
+- Goal: stress: adaptive attacker, about 45 attacks including cross-capability and image injection, fix failures with architecture.
+- What Kingsley directed: "go on with day 4".
+- What AI produced: `evals/attacker.py` (adaptive attacker through Inspect), `adaptive` task and 14 goals, 23 new scripted attacks (45 total) including two image-injection photos generated once with a temporary Pillow, `forbidden_effects` in outcome scoring. Suite committed before any run. Fixes: duplicate returns refused in the policy engine; `app/reply_guard.py` (three iterations, each test-first); FAQ F8; leak scorer ordering. Supplementary `gpt-4o-mini` runs. Results, failures and decisions written up.
+- Kept: all fixes; every guard change has a test that failed first.
+- Rejected or changed, and why:
+  - Stopped tuning the guard after three iterations: remaining invented-policy flags are varied one-offs, and further patterns would fit this judge rather than improve the agent.
+  - AI first described the baseline's adv-06 failure as "cancelled a shipped order"; checking the observed effects showed it authorized a return on an undelivered order. Corrected before writing it down.
+  - Did not change the headline claim: the evidence no longer supports "under attack"; flagged to Kingsley as his decision (decisions.md).
+- Failures hit: ten in the fixes and harness, listed in `docs/failures.md` (Day 4 section), including a vacuous test assertion (`... or True`) that AI wrote and then removed, and a guard template that caused an unnecessary escalation.
+- Time spent: about 16:24 to 16:49 WAT (system clock). **[Kingsley to confirm]**
