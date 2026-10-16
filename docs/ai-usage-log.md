@@ -65,4 +65,4 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
   - Tests are mutation-checked: R8, R2 and R9 boundaries, removing the identity check (4 failures), and turning policy denials into payouts (caught after the fix).
   - Audit, code review half (started 06:12): pinned five targets in `audit/targets.md` and wrote code review findings in `docs/audit.md`. Confirmed the directive's discovery claim at the pinned commit (T1 `nodes.py:66`). Found two further T1 issues by reading the code, and noted strengths fairly (T2 identity, T4 and T5 amounts from the database).
 - Not yet done: no run against a real model. Waiting for the OpenAI key and the exact model ID for "LUNA".
-- Time spent: (to update at end of session)
+- Time spent: about 30 minutes of session time, 05:50 to about 06:20 WAT (from git commit times). **[Kingsley to confirm]**
