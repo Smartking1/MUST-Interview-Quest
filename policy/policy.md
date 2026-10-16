@@ -24,7 +24,7 @@ Items marked final sale are not refundable.
 Total refunds on an order never exceed the amount paid.
 
 ## R8 Auto-approval limit
-A single refund over $200 requires human approval.
+A single refund over ₦300,000 requires human approval.
 
 ## R9 Frequency limit
 More than 2 refunds per customer in 90 days requires human approval.

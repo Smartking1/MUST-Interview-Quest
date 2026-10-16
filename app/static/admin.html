@@ -70,10 +70,10 @@ async function load() {
   if (!escs.length) box.textContent = "None.";
   escs.forEach(e => {
     const amount = el("input", { type: "number", min: "0", step: "0.01",
-      placeholder: "Amount $", value: e.proposed_amount_cents ? (e.proposed_amount_cents / 100).toFixed(2) : "" });
+      placeholder: "Amount ₦", value: e.proposed_amount_kobo ? (e.proposed_amount_kobo / 100).toFixed(2) : "" });
     const approve = el("button", { className: "approve", textContent: "Approve refund",
       onclick: () => post(`/api/admin/escalations/${e.id}/approve`,
-        { admin: adminName(), amount_cents: amount.value ? Math.round(parseFloat(amount.value) * 100) : null }) });
+        { admin: adminName(), amount_kobo: amount.value ? Math.round(parseFloat(amount.value) * 100) : null }) });
     const deny = el("button", { className: "deny", textContent: "Deny",
       onclick: () => post(`/api/admin/escalations/${e.id}/deny`, { admin: adminName() }) });
     const photos = el("div", { className: "row" });

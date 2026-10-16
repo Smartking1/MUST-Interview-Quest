@@ -93,3 +93,12 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Failures hit: `paystack.com/docs` returned 403 to both the fetch tool and curl; worked around with the official spec on GitHub. One existing executor test encoded the old behaviour (roll back and retry the same decision) and failed as expected; rewritten for the new behaviour.
 - Not yet done: the real test-mode payment and refund need Kingsley's Paystack test secret key and one checkout payment with a test card.
 - Time spent: session ended about 08:31 WAT (system clock; start not recorded). **[Kingsley to confirm]**
+
+## Day 3, 2026-10-16, session 4
+- Goal: switch the store currency to naira.
+- What Kingsley directed: "switch the currency to naira" (choosing this over AI's recommendation to keep USD and send cents one to one as kobo).
+- What AI produced: renamed every `_cents` field to `_kobo` across code, tests and datasets; repriced the seed catalogue in naira; R8 limit ₦300,000; naira formatting in summaries and UI; policy and FAQ text; `naira_given_away` scorer; CLAUDE.md updated; Paystack gateway and setup docstrings simplified now that no conversion note is needed.
+- Kept: all of the above. The ₦300,000 limit is AI's choice, flagged for Kingsley to confirm.
+- Rejected or changed, and why: AI's earlier recommendation (keep USD, send one to one) was overruled by Kingsley.
+- Failures hit: the first bulk rename did nothing because zsh does not split an unquoted variable into separate file arguments; rerun through xargs. 15 tests failed after repricing, all on hard-coded dollar-era amounts, as expected; updated, with R8 tests tied to the limit constant. One test kept passing for a meaningless reason after repricing and was rewritten. R8 off-by-one mutation re-checked: caught (3 failures).
+- Time spent: (to update at end of session)

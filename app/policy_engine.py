@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 
-AUTO_APPROVAL_LIMIT_CENTS = 20_000  # R8: over $200 needs a human
+AUTO_APPROVAL_LIMIT_KOBO = 30_000_000  # R8: over ₦300,000 needs a human
 FREQUENCY_WINDOW_DAYS = 90  # R9
 FREQUENCY_MAX_AUTO = 2  # R9: more than 2 refunds in the window needs a human
 RESTOCKING_FEE_PERCENT = 15  # R3
@@ -46,13 +46,13 @@ class OrderStatus(StrEnum):
 class ItemSnapshot:
     line_item_id: int
     category: str  # electronics, fashion, home
-    price_cents: int  # per unit
+    price_kobo: int  # per unit
     qty: int
     final_sale: bool
 
     @property
-    def total_cents(self) -> int:
-        return self.price_cents * self.qty
+    def total_kobo(self) -> int:
+        return self.price_kobo * self.qty
 
 
 @dataclass(frozen=True)
@@ -60,7 +60,7 @@ class OrderSnapshot:
     order_id: int
     customer_id: int
     status: OrderStatus
-    paid_cents: int
+    paid_kobo: int
     items: tuple[ItemSnapshot, ...]
     delivered_at: datetime | None = None
 
@@ -70,7 +70,7 @@ class RefundRecord:
     """A refund already executed for this customer, on any order."""
 
     order_id: int
-    amount_cents: int
+    amount_kobo: int
     created_at: datetime
     line_item_ids: tuple[int, ...] = ()
 
@@ -90,7 +90,7 @@ class ItemOutcome:
     line_item_id: int
     outcome: Outcome
     rule_ids: tuple[str, ...]
-    amount_cents: int = 0
+    amount_kobo: int = 0
     reason: str = ""
 
 
@@ -101,8 +101,8 @@ class Decision:
     line_item_ids: tuple[int, ...]
     rule_ids: tuple[str, ...]
     reason: str
-    amount_cents: int = 0  # non-zero only for APPROVE
-    proposed_amount_cents: int | None = None  # for a human reviewing an ESCALATE
+    amount_kobo: int = 0  # non-zero only for APPROVE
+    proposed_amount_kobo: int | None = None  # for a human reviewing an ESCALATE
     items: tuple[ItemOutcome, ...] = field(default_factory=tuple)
 
 
@@ -118,9 +118,9 @@ def _unique(ids: list[str] | tuple[str, ...]) -> tuple[str, ...]:
     return tuple(dict.fromkeys(ids))
 
 
-def restocking_fee_cents(amount_cents: int) -> int:
+def restocking_fee_kobo(amount_kobo: int) -> int:
     """15% of the amount, rounded half up to the nearest cent."""
-    return (amount_cents * RESTOCKING_FEE_PERCENT + 50) // 100
+    return (amount_kobo * RESTOCKING_FEE_PERCENT + 50) // 100
 
 
 def identity_matches(order_email: str, given_email: str) -> bool:
@@ -129,7 +129,7 @@ def identity_matches(order_email: str, given_email: str) -> bool:
 
 
 def _refunded_on_order(order_id: int, history: tuple[RefundRecord, ...]) -> int:
-    return sum(r.amount_cents for r in history if r.order_id == order_id)
+    return sum(r.amount_kobo for r in history if r.order_id == order_id)
 
 
 def _refunded_item_ids(order_id: int, history: tuple[RefundRecord, ...]) -> set[int]:
@@ -157,7 +157,7 @@ def _validate_items(
 
 def _apply_money_limits(
     order: OrderSnapshot,
-    amount_cents: int,
+    amount_kobo: int,
     rule_ids: tuple[str, ...],
     line_item_ids: tuple[int, ...],
     items: tuple[ItemOutcome, ...],
@@ -166,31 +166,31 @@ def _apply_money_limits(
 ) -> Decision:
     """R7, R8, R9 applied to any refund about to be approved. All are cumulative."""
     already = _refunded_on_order(order.order_id, history)
-    remaining = order.paid_cents - already
+    remaining = order.paid_kobo - already
     if remaining <= 0:
         return Decision(
             Outcome.DENY, order.order_id, line_item_ids, _unique(rule_ids + ("R7",)),
             "This order has already been refunded in full.", items=items,
         )
-    if amount_cents > remaining:
-        amount_cents = remaining
+    if amount_kobo > remaining:
+        amount_kobo = remaining
         rule_ids = rule_ids + ("R7",)
 
-    if already + amount_cents > AUTO_APPROVAL_LIMIT_CENTS:
+    if already + amount_kobo > AUTO_APPROVAL_LIMIT_KOBO:
         return Decision(
             Outcome.ESCALATE, order.order_id, line_item_ids, _unique(rule_ids + ("R8",)),
-            "Refunds on this order would total more than $200, which needs human approval.",
-            proposed_amount_cents=amount_cents, items=items,
+            "Refunds on this order would total more than ₦300,000, which needs human approval.",
+            proposed_amount_kobo=amount_kobo, items=items,
         )
     if _recent_refund_count(history, now) >= FREQUENCY_MAX_AUTO:
         return Decision(
             Outcome.ESCALATE, order.order_id, line_item_ids, _unique(rule_ids + ("R9",)),
             "This would be more than 2 refunds in 90 days, which needs human approval.",
-            proposed_amount_cents=amount_cents, items=items,
+            proposed_amount_kobo=amount_kobo, items=items,
         )
     return Decision(
         Outcome.APPROVE, order.order_id, line_item_ids, _unique(rule_ids),
-        "Refund approved under policy.", amount_cents=amount_cents, items=items,
+        "Refund approved under policy.", amount_kobo=amount_kobo, items=items,
     )
 
 
@@ -225,7 +225,7 @@ def _aggregate(
             items=items,
         )
     return _apply_money_limits(
-        order, sum(i.amount_cents for i in approved), rule_ids,
+        order, sum(i.amount_kobo for i in approved), rule_ids,
         tuple(i.line_item_id for i in approved), items, history, now,
     )
 
@@ -244,7 +244,7 @@ def evaluate_cancellation(
     if order.status != OrderStatus.PLACED:
         return Decision(Outcome.DENY, order.order_id, all_items, ("R1",),
                         "This order has already shipped, so it cannot be cancelled.")
-    return _apply_money_limits(order, order.paid_cents, ("R1",), all_items, (), history, now)
+    return _apply_money_limits(order, order.paid_kobo, ("R1",), all_items, (), history, now)
 
 
 def evaluate_request(
@@ -346,7 +346,7 @@ def evaluate_received_returns(
         elif not ret.opened:
             if days <= UNOPENED_WINDOW_DAYS:
                 outcomes.append(ItemOutcome(item.line_item_id, Outcome.APPROVE, ("R2",),
-                                            amount_cents=item.total_cents))
+                                            amount_kobo=item.total_kobo))
             else:
                 outcomes.append(ItemOutcome(item.line_item_id, Outcome.DENY, ("R2",),
                                             reason="Returned after the 30 day window."))
@@ -355,11 +355,11 @@ def evaluate_received_returns(
                                         reason="Opened items must be returned within 15 days."))
         elif item.category == "fashion" and ret.tags_attached:
             outcomes.append(ItemOutcome(item.line_item_id, Outcome.APPROVE, ("R3",),
-                                        amount_cents=item.total_cents))
+                                        amount_kobo=item.total_kobo))
         else:
-            fee = restocking_fee_cents(item.total_cents)
+            fee = restocking_fee_kobo(item.total_kobo)
             outcomes.append(ItemOutcome(item.line_item_id, Outcome.APPROVE, ("R3",),
-                                        amount_cents=item.total_cents - fee,
+                                        amount_kobo=item.total_kobo - fee,
                                         reason="15% restocking fee applied."))
 
     return _aggregate(order, line_item_ids, tuple(outcomes), history, now,

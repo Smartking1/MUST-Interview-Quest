@@ -11,7 +11,7 @@ pays for every other order by API.
      Verifies that payment, charges the other orders with the same
      authorization, mirrors the seeded refunds, and saves all references.
 
-Amounts are the store's cents sent one to one as PAYSTACK_CURRENCY subunits.
+All amounts are kobo (NGN subunits), as Paystack expects.
 """
 
 from __future__ import annotations
@@ -48,9 +48,9 @@ def currency() -> str:
     return os.environ.get("PAYSTACK_CURRENCY", "NGN")
 
 
-def paid_cents(number: str) -> int:
+def paid_kobo(number: str) -> int:
     spec = next(o for o in ORDERS if o.number == number)
-    return sum(i.price_cents * i.qty for i in spec.items) + spec.shipping_cents - spec.discount_cents
+    return sum(i.price_kobo * i.qty for i in spec.items) + spec.shipping_kobo - spec.discount_kobo
 
 
 def call(http: httpx.Client, method: str, path: str, **kwargs) -> dict:
@@ -64,7 +64,7 @@ def call(http: httpx.Client, method: str, path: str, **kwargs) -> dict:
 def checkout() -> None:
     with client() as http:
         data = call(http, "POST", "/transaction/initialize", json={
-            "email": payer_email(), "amount": paid_cents(FIRST_ORDER), "currency": currency(),
+            "email": payer_email(), "amount": paid_kobo(FIRST_ORDER), "currency": currency(),
             "reference": f"harbor-{FIRST_ORDER.lower()}-{uuid.uuid4().hex[:10]}",
             "channels": ["card"], "metadata": {"order_number": FIRST_ORDER},
         })
@@ -89,14 +89,14 @@ def finish(reference: str) -> None:
                 continue
             ref = f"harbor-{spec.number.lower()}-{uuid.uuid4().hex[:10]}"
             charged = call(http, "POST", "/transaction/charge_authorization", json={
-                "email": payer_email(), "amount": paid_cents(spec.number), "currency": currency(),
+                "email": payer_email(), "amount": paid_kobo(spec.number), "currency": currency(),
                 "authorization_code": auth["authorization_code"], "reference": ref,
                 "metadata": {"order_number": spec.number},
             })
             refs[spec.number] = charged["reference"]
             print(f"{spec.number}: {charged['reference']} ({charged['status']})")
-            for cents, _, _ in spec.prior_refunds:  # keep Paystack consistent with seeded refund history
-                call(http, "POST", "/refund", json={"transaction": charged["reference"], "amount": cents,
+            for kobo, _, _ in spec.prior_refunds:  # keep Paystack consistent with seeded refund history
+                call(http, "POST", "/refund", json={"transaction": charged["reference"], "amount": kobo,
                                                     "merchant_note": "seeded prior refund"})
         payment_refs.save(refs)
     with Session(make_engine()) as s:

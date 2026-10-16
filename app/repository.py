@@ -21,9 +21,9 @@ def order_snapshot(order: Order) -> OrderSnapshot:
         order_id=order.id,
         customer_id=order.customer_id,
         status=OrderStatus(order.status),
-        paid_cents=order.paid_cents,
+        paid_kobo=order.paid_kobo,
         items=tuple(
-            ItemSnapshot(i.id, i.category, i.price_cents, i.qty, i.final_sale)
+            ItemSnapshot(i.id, i.category, i.price_kobo, i.qty, i.final_sale)
             for i in sorted(order.items, key=lambda i: i.id)
         ),
         delivered_at=as_utc(order.delivered_at) if order.delivered_at else None,
@@ -33,7 +33,7 @@ def order_snapshot(order: Order) -> OrderSnapshot:
 def refund_history(session: Session, customer_id: int) -> tuple[RefundRecord, ...]:
     rows = session.scalars(select(Refund).where(Refund.customer_id == customer_id, Refund.status != "failed"))
     return tuple(
-        RefundRecord(r.order_id, r.amount_cents, as_utc(r.created_at), tuple(r.line_item_ids))
+        RefundRecord(r.order_id, r.amount_kobo, as_utc(r.created_at), tuple(r.line_item_ids))
         for r in rows
     )
 

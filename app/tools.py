@@ -100,7 +100,7 @@ def _execute(ctx: ConversationContext, decision: Decision) -> str:
         result = ctx.executor.execute(token)
     except ExecutionRejected as exc:
         return f"The refund could not be completed: {exc}"
-    return f"Refund of {money(result.amount_cents)} issued (reference {result.gateway_ref})."
+    return f"Refund of {money(result.amount_kobo)} issued (reference {result.gateway_ref})."
 
 
 # ----------------------------------------------------------------- tools
@@ -142,7 +142,7 @@ def build_tools(ctx: ConversationContext) -> dict[str, BaseTool]:
                 return NOT_VERIFIED
             d = evaluate_cancellation(order_snapshot(order), refund_history(s, order.customer_id), now())
             if d.outcome == Outcome.ESCALATE:
-                esc = _escalate(ctx, s, order, "Cancel order", d.rule_ids, d.reason, d.proposed_amount_cents,
+                esc = _escalate(ctx, s, order, "Cancel order", d.rule_ids, d.reason, d.proposed_amount_kobo,
                                 d.line_item_ids)
                 s.commit()
                 return f"Not cancelled automatically: {d.reason} Passed to staff (case {esc.id}). Rules: {_rule_text(d.rule_ids)}."
@@ -186,7 +186,7 @@ def build_tools(ctx: ConversationContext) -> dict[str, BaseTool]:
                         f"decided when the return is received and inspected. Rules: {rules}.")
             if d.outcome == Outcome.ESCALATE:
                 esc = _escalate(ctx, s, order, f"{reason.value} for items {list(line_item_ids)}",
-                                d.rule_ids, d.reason, d.proposed_amount_cents, d.line_item_ids)
+                                d.rule_ids, d.reason, d.proposed_amount_kobo, d.line_item_ids)
                 s.commit()
                 return f"Passed to staff for review (case {esc.id}): {d.reason} Rules: {rules}."
             if d.outcome == Outcome.DENY:

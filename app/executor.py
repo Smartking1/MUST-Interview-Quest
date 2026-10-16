@@ -39,7 +39,7 @@ class ExecutionRejected(Exception):
 class ExecutionResult:
     decision_id: str
     order_id: int
-    amount_cents: int
+    amount_kobo: int
     gateway_ref: str
 
 
@@ -66,7 +66,7 @@ class Executor:
             try:
                 result = self._gateway.refund(
                     session, order_id=payload.order_id, payment_ref=payment_ref,
-                    amount_cents=payload.amount_cents, idempotency_key=payload.decision_id,
+                    amount_kobo=payload.amount_kobo, idempotency_key=payload.decision_id,
                 )
             except GatewayRejected:
                 session.rollback()
@@ -77,7 +77,7 @@ class Executor:
                 raise  # outcome unknown: the refund stays pending for a human to reconcile
             session.commit()  # the gateway's ledger entry
         self._finish(refund_id, "succeeded", result.gateway_ref, cancel="R1" in payload.rule_ids)
-        return ExecutionResult(payload.decision_id, payload.order_id, payload.amount_cents, result.gateway_ref)
+        return ExecutionResult(payload.decision_id, payload.order_id, payload.amount_kobo, result.gateway_ref)
 
     def _claim(self, p: SignedPayload) -> tuple[int, str | None]:
         with self._sessions() as session:
@@ -90,7 +90,7 @@ class Executor:
                 raise ExecutionRejected("Decision names items that are not on this order.")
 
             prior = counted_refunds(session, order.id)
-            if sum(r.amount_cents for r in prior) + p.amount_cents > order.paid_cents:
+            if sum(r.amount_kobo for r in prior) + p.amount_kobo > order.paid_kobo:
                 raise ExecutionRejected("Refund would exceed the amount paid (R7).")
             already = {i for r in prior for i in r.line_item_ids}
             if "R1" not in p.rule_ids and already & set(p.line_item_ids):
@@ -98,7 +98,7 @@ class Executor:
 
             refund = Refund(
                 decision_id=p.decision_id, order_id=order.id, customer_id=order.customer_id,
-                line_item_ids=list(p.line_item_ids), amount_cents=p.amount_cents,
+                line_item_ids=list(p.line_item_ids), amount_kobo=p.amount_kobo,
                 rule_ids=list(p.rule_ids), issuer=p.issuer, status="pending", created_at=now(),
             )
             session.add(refund)

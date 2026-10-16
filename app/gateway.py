@@ -31,7 +31,7 @@ class GatewayRejected(GatewayError):
 @dataclass(frozen=True)
 class GatewayResult:
     gateway_ref: str
-    amount_cents: int
+    amount_kobo: int
 
 
 class PaymentGateway(Protocol):
@@ -39,7 +39,7 @@ class PaymentGateway(Protocol):
 
     def refund(
         self, session: Session, *, order_id: int, payment_ref: str | None,
-        amount_cents: int, idempotency_key: str | None,
+        amount_kobo: int, idempotency_key: str | None,
     ) -> GatewayResult: ...
 
 
@@ -53,24 +53,24 @@ class FakeGateway:
 
     def refund(
         self, session: Session, *, order_id: int, payment_ref: str | None,
-        amount_cents: int, idempotency_key: str | None,
+        amount_kobo: int, idempotency_key: str | None,
     ) -> GatewayResult:
-        if amount_cents <= 0:
+        if amount_kobo <= 0:
             raise GatewayRejected("Refund amount must be positive.")
         if idempotency_key:
             prior = session.scalar(
                 select(GatewayLedger).where(GatewayLedger.idempotency_key == idempotency_key)
             )
             if prior:
-                return GatewayResult(prior.gateway_ref, prior.amount_cents)
+                return GatewayResult(prior.gateway_ref, prior.amount_kobo)
         ref = f"fake_re_{uuid.uuid4().hex[:16]}"
         session.add(GatewayLedger(
-            agent=self.agent, order_id=order_id, amount_cents=amount_cents,
+            agent=self.agent, order_id=order_id, amount_kobo=amount_kobo,
             idempotency_key=idempotency_key, gateway=self.name, gateway_ref=ref,
             created_at=now(),
         ))
         session.flush()
-        return GatewayResult(ref, amount_cents)
+        return GatewayResult(ref, amount_kobo)
 
 
 class PaystackGateway:
@@ -81,10 +81,7 @@ class PaystackGateway:
     two-phase claim provides that guarantee, and the decision_id is sent as
     the merchant note so any refund can be traced in the Paystack dashboard.
 
-    Amounts: the store prices in USD cents. A Nigerian Paystack test account
-    settles in NGN, so test refunds are sent in PAYSTACK_CURRENCY subunits
-    one to one (1 US cent = 1 kobo by default). This is a test-mode
-    convenience, stated in the README, not a conversion.
+    Amounts are integer kobo throughout, matching Paystack's NGN subunit.
     """
 
     name = "paystack"
@@ -99,14 +96,14 @@ class PaystackGateway:
 
     def refund(
         self, session: Session, *, order_id: int, payment_ref: str | None,
-        amount_cents: int, idempotency_key: str | None,
+        amount_kobo: int, idempotency_key: str | None,
     ) -> GatewayResult:
-        if amount_cents <= 0:
+        if amount_kobo <= 0:
             raise GatewayRejected("Refund amount must be positive.")
         if not payment_ref:
             raise GatewayRejected("Order has no Paystack payment to refund. Run app.paystack_setup first.")
         response = self._http.post("/refund", json={
-            "transaction": payment_ref, "amount": amount_cents, "currency": self.currency,
+            "transaction": payment_ref, "amount": amount_kobo, "currency": self.currency,
             "merchant_note": f"Trusted Support decision {idempotency_key}",
         })
         if 400 <= response.status_code < 500:
@@ -115,11 +112,11 @@ class PaystackGateway:
         data = response.json()["data"]
         ref = f"paystack_refund_{data['id']}"
         session.add(GatewayLedger(
-            agent=self.agent, order_id=order_id, amount_cents=amount_cents,
+            agent=self.agent, order_id=order_id, amount_kobo=amount_kobo,
             idempotency_key=idempotency_key, gateway=self.name, gateway_ref=ref, created_at=now(),
         ))
         session.flush()
-        return GatewayResult(ref, amount_cents)
+        return GatewayResult(ref, amount_kobo)
 
 
 def _message(response: httpx.Response) -> str:

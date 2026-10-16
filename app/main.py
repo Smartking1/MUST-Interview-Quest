@@ -44,7 +44,7 @@ class ChatIn(BaseModel):
 
 class ApproveIn(BaseModel):
     admin: str
-    amount_cents: int | None = None
+    amount_kobo: int | None = None
 
 
 class DenyIn(BaseModel):
@@ -112,7 +112,7 @@ def create_app(db_url: str | None = None) -> FastAPI:
     def escalations():
         with sessions() as s:
             return [{"id": e.id, "summary": e.summary, "rule_ids": e.rule_ids, "reason": e.reason,
-                     "proposed_amount_cents": e.proposed_amount_cents, "created_at": e.created_at.isoformat(),
+                     "proposed_amount_kobo": e.proposed_amount_kobo, "created_at": e.created_at.isoformat(),
                      "attachments": list(s.scalars(select(Attachment.id).where(Attachment.escalation_id == e.id)))}
                     for e in admin.open_escalations(s)]
 
@@ -127,10 +127,10 @@ def create_app(db_url: str | None = None) -> FastAPI:
     @app.post("/api/admin/escalations/{escalation_id}/approve")
     def approve(escalation_id: int, body: ApproveIn):
         try:
-            r = admin.approve_escalation(sessions, executor, secret, escalation_id, body.admin, body.amount_cents)
+            r = admin.approve_escalation(sessions, executor, secret, escalation_id, body.admin, body.amount_kobo)
         except admin.AdminError as exc:
             raise HTTPException(400, str(exc)) from exc
-        return {"message": r.message, "amount_cents": r.amount_cents}
+        return {"message": r.message, "amount_kobo": r.amount_kobo}
 
     @app.post("/api/admin/escalations/{escalation_id}/deny")
     def deny(escalation_id: int, body: DenyIn):
@@ -147,7 +147,7 @@ def create_app(db_url: str | None = None) -> FastAPI:
                 item = s.get(LineItem, r.line_item_id)
                 order = s.get(Order, item.order_id)
                 out.append({"id": r.id, "order_number": order.order_number, "item": item.name,
-                            "category": item.category, "price": money(item.price_cents * item.qty),
+                            "category": item.category, "price": money(item.price_kobo * item.qty),
                             "requested_at": r.requested_at.isoformat()})
             return out
 
@@ -157,14 +157,14 @@ def create_app(db_url: str | None = None) -> FastAPI:
             r = admin.receive_return(sessions, executor, secret, return_id, body.opened, body.tags_attached)
         except admin.AdminError as exc:
             raise HTTPException(400, str(exc)) from exc
-        return {"message": r.message, "amount_cents": r.amount_cents}
+        return {"message": r.message, "amount_kobo": r.amount_kobo}
 
     @app.get("/api/admin/ledger")
     def ledger():
         with sessions() as s:
             rows = s.scalars(select(GatewayLedger).order_by(GatewayLedger.id.desc()).limit(50))
             orders = {o.id: o.order_number for o in s.scalars(select(Order))}
-            return [{"agent": g.agent, "order_number": orders.get(g.order_id), "amount": money(g.amount_cents),
+            return [{"agent": g.agent, "order_number": orders.get(g.order_id), "amount": money(g.amount_kobo),
                      "gateway": g.gateway, "ref": g.gateway_ref, "at": g.created_at.isoformat()} for g in rows]
 
     @app.get("/api/demo/customers")

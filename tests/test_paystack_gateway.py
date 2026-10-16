@@ -37,7 +37,7 @@ def decision(sessions, frozen_now, ref="T685312322670591"):
         order = find_order(s, "HM-1005")
         order.gateway_payment_ref = ref
         s.commit()
-        d = Decision(Outcome.APPROVE, order.id, (order.items[0].id,), ("R2",), "ok", amount_cents=7_900)
+        d = Decision(Outcome.APPROVE, order.id, (order.items[0].id,), ("R2",), "ok", amount_kobo=7_900)
     return sign_decision(d, b"k", frozen_now)
 
 

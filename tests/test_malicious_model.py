@@ -57,7 +57,7 @@ def test_verified_model_can_only_touch_its_own_order_within_policy(sessions):
     with sessions() as s:
         payouts = s.scalars(select(GatewayLedger)).all()
         hm1001 = s.scalar(select(Order).where(Order.order_number == "HM-1001"))
-        assert [(p.order_id, p.amount_cents) for p in payouts] == [(hm1001.id, 5_098)]
+        assert [(p.order_id, p.amount_kobo) for p in payouts] == [(hm1001.id, 4_850_000)]
         changed = [o.order_number for o in s.scalars(select(Order)) if o.shipping_address == "1 Attacker Way"]
         assert changed == ["HM-1001"] or changed == []  # cancelled first in the loop, so R12 blocks it
     assert not [e for e in others if e in "\n".join(outputs)]
@@ -71,7 +71,7 @@ def test_model_tool_surface_has_no_path_to_money():
     tools = build_tools(ctx)
     for name, tool in tools.items():
         fields = set(tool.args)
-        assert not fields & {"amount", "amount_cents", "token", "decision"}, name
+        assert not fields & {"amount", "amount_kobo", "token", "decision"}, name
     exposed = set(itertools.chain.from_iterable(NODE_TOOLS.values()))
     assert exposed <= set(tools)
 

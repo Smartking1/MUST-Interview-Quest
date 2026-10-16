@@ -29,7 +29,7 @@ class SignedPayload:
     decision_id: str
     order_id: int
     line_item_ids: tuple[int, ...]
-    amount_cents: int
+    amount_kobo: int
     rule_ids: tuple[str, ...]
     issuer: str  # "policy_engine" or "human:<name>"
     issued_at: str  # ISO 8601, UTC
@@ -57,13 +57,13 @@ def sign_decision(
     ttl: timedelta = DEFAULT_TTL,
 ) -> str:
     """Sign an APPROVE decision. Nothing else can be turned into money."""
-    if decision.outcome != Outcome.APPROVE or decision.amount_cents <= 0:
+    if decision.outcome != Outcome.APPROVE or decision.amount_kobo <= 0:
         raise InvalidDecision("Only approved decisions with a positive amount can be signed.")
     payload = SignedPayload(
         decision_id=str(uuid.uuid4()),
         order_id=decision.order_id,
         line_item_ids=tuple(decision.line_item_ids),
-        amount_cents=decision.amount_cents,
+        amount_kobo=decision.amount_kobo,
         rule_ids=tuple(decision.rule_ids),
         issuer=issuer,
         issued_at=now.isoformat(),

@@ -31,10 +31,10 @@ def test_receiving_opened_return_refunds_with_restocking_fee(client):
     [ret] = client.get("/api/admin/returns").json()  # HM-1008 keyboard is seeded as authorized
     assert ret["order_number"] == "HM-1008"
     r = client.post(f"/api/admin/returns/{ret['id']}/receive", json={"opened": True})
-    assert r.status_code == 200 and r.json()["amount_cents"] == 10_200
+    assert r.status_code == 200 and r.json()["amount_kobo"] == 10_200_000
     assert client.post(f"/api/admin/returns/{ret['id']}/receive", json={"opened": True}).status_code == 400
     [entry] = client.get("/api/admin/ledger").json()
-    assert entry["amount"] == "$102.00" and entry["agent"] == "trusted"
+    assert entry["amount"] == "₦102,000.00" and entry["agent"] == "trusted"
 
 
 def test_human_approval_goes_through_executor_once(client, tmp_path):
@@ -47,10 +47,10 @@ def test_human_approval_goes_through_executor_once(client, tmp_path):
     assert "staff" in t["cancel_order"].invoke({"order_number": "HM-1002"})
 
     [esc] = client.get("/api/admin/escalations").json()
-    assert "R8" in esc["rule_ids"] and esc["proposed_amount_cents"] == 29_399
+    assert "R8" in esc["rule_ids"] and esc["proposed_amount_kobo"] == 42_350_000
     assert client.post(f"/api/admin/escalations/{esc['id']}/approve", json={"admin": ""}).status_code == 400
     r = client.post(f"/api/admin/escalations/{esc['id']}/approve", json={"admin": "Kingsley"})
-    assert r.status_code == 200 and r.json()["amount_cents"] == 29_399
+    assert r.status_code == 200 and r.json()["amount_kobo"] == 42_350_000
     assert client.post(f"/api/admin/escalations/{esc['id']}/approve", json={"admin": "Kingsley"}).status_code == 400
     assert client.get("/api/admin/escalations").json() == []
 
@@ -66,7 +66,7 @@ def test_human_cannot_pay_more_than_paid(client, tmp_path):
     item = int(out.split("line_item_id ")[1].split(":")[0])
     t["request_refund"].invoke({"order_number": "HM-1011", "line_item_ids": [item], "reason_code": "defective"})
     [esc] = client.get("/api/admin/escalations").json()
-    r = client.post(f"/api/admin/escalations/{esc['id']}/approve", json={"admin": "K", "amount_cents": 1_000_000})
+    r = client.post(f"/api/admin/escalations/{esc['id']}/approve", json={"admin": "K", "amount_kobo": 100_000_000})
     assert r.status_code == 400 and "R7" in r.json()["detail"]
     assert client.get("/api/admin/ledger").json() == []
 

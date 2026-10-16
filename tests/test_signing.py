@@ -9,12 +9,12 @@ from app.signing import InvalidDecision, sign_decision, verify
 
 SECRET = b"test-secret"
 NOW = datetime(2026, 10, 15, 12, 0, tzinfo=UTC)
-APPROVED = Decision(Outcome.APPROVE, 100, (1,), ("R2",), "ok", amount_cents=5_000)
+APPROVED = Decision(Outcome.APPROVE, 100, (1,), ("R2",), "ok", amount_kobo=5_000)
 
 
 def test_round_trip():
     payload = verify(sign_decision(APPROVED, SECRET, NOW), SECRET, NOW)
-    assert payload.amount_cents == 5_000
+    assert payload.amount_kobo == 5_000
     assert payload.order_id == 100
     assert payload.issuer == "policy_engine"
 
@@ -34,7 +34,7 @@ def test_non_approve_decisions_cannot_be_signed(outcome):
 def test_altered_amount_is_rejected():
     encoded, mac = sign_decision(APPROVED, SECRET, NOW).split(".")
     body = json.loads(base64.urlsafe_b64decode(encoded))
-    body["amount_cents"] = 500_000
+    body["amount_kobo"] = 500_000
     forged = base64.urlsafe_b64encode(json.dumps(body).encode()).decode() + "." + mac
     with pytest.raises(InvalidDecision):
         verify(forged, SECRET, NOW)

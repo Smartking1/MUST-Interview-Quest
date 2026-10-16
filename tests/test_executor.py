@@ -23,18 +23,18 @@ def approved(sessions, number, amount, rules=("R2",)):
     with sessions() as s:
         o = find_order(s, number)
         return Decision(Outcome.APPROVE, o.id, tuple(i.id for i in o.items), rules, "ok",
-                        amount_cents=amount)
+                        amount_kobo=amount)
 
 
 def ledger_total(sessions):
     with sessions() as s:
-        return s.scalar(select(func.coalesce(func.sum(GatewayLedger.amount_cents), 0)))
+        return s.scalar(select(func.coalesce(func.sum(GatewayLedger.amount_kobo), 0)))
 
 
 def test_valid_decision_pays_once_and_records_refund(sessions, executor, frozen_now):
     token = sign_decision(approved(sessions, "HM-1005", 7_900), SECRET, frozen_now)
     result = executor.execute(token)
-    assert result.amount_cents == 7_900
+    assert result.amount_kobo == 7_900
     assert ledger_total(sessions) == 7_900
     with sessions() as s:
         assert s.scalar(select(Refund).where(Refund.decision_id == result.decision_id)).gateway_ref
@@ -45,7 +45,7 @@ def test_replayed_decision_is_rejected_and_pays_nothing_more(sessions, executor,
     with sessions() as s:
         o = find_order(s, "HM-1019")
         first_item = (o.items[0].id,)
-    d = Decision(Outcome.APPROVE, o.id, first_item, ("R2",), "ok", amount_cents=5_000)
+    d = Decision(Outcome.APPROVE, o.id, first_item, ("R2",), "ok", amount_kobo=5_000)
     token = sign_decision(d, SECRET, frozen_now)
     executor.execute(token)
     with pytest.raises(ExecutionRejected, match="already been used"):
@@ -68,7 +68,7 @@ def test_expired_decision_is_rejected(sessions, executor, frozen_now):
 
 def test_executor_rechecks_r7_against_live_database(sessions, executor, frozen_now):
     """Even a validly signed decision cannot pay more than the order's remaining balance."""
-    token = sign_decision(approved(sessions, "HM-1005", 1_000_000), SECRET, frozen_now)
+    token = sign_decision(approved(sessions, "HM-1005", 100_000_000), SECRET, frozen_now)
     with pytest.raises(ExecutionRejected, match="R7"):
         executor.execute(token)
     assert ledger_total(sessions) == 0
@@ -111,7 +111,7 @@ def test_gateway_rejection_is_recorded_and_the_decision_cannot_be_replayed(sessi
     with pytest.raises(ExecutionRejected, match="already been used"):
         Executor(sessions, FakeGateway(), SECRET).execute(token)
     fresh = sign_decision(approved(sessions, "HM-1005", 7_900), SECRET, frozen_now)
-    assert Executor(sessions, FakeGateway(), SECRET).execute(fresh).amount_cents == 7_900
+    assert Executor(sessions, FakeGateway(), SECRET).execute(fresh).amount_kobo == 7_900
 
 
 def test_crash_after_gateway_pays_leaves_pending_refund_that_blocks_a_second_payout(sessions, frozen_now):

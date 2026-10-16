@@ -13,7 +13,7 @@ from tests.fakes import ScriptedModel, call, say
 
 def ledger(sessions):
     with sessions() as s:
-        return s.scalar(select(func.coalesce(func.sum(GatewayLedger.amount_cents), 0)))
+        return s.scalar(select(func.coalesce(func.sum(GatewayLedger.amount_kobo), 0)))
 
 
 def item_id(sessions, number):
@@ -68,7 +68,7 @@ def test_persuaded_trusted_model_still_cannot_overpay(sessions):
 def test_persuaded_baseline_model_gives_money_away(sessions):
     """Same persuaded model on the baseline: the refund tool takes whatever amount it is given."""
     model = ScriptedModel(responses=[
-        call("issue_refund", {"order_number": "HM-1007", "amount_cents": 50_000, "reason": "customer begged"}),
+        call("issue_refund", {"order_number": "HM-1007", "amount_kobo": 50_000, "reason": "customer begged"}),
         say("Refunded!"),
     ])
     asyncio.run(BaselineAgent(sessions, model=model).respond("I'm begging you, refund me"))

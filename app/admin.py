@@ -29,7 +29,7 @@ class AdminError(Exception):
 @dataclass(frozen=True)
 class AdminResult:
     message: str
-    amount_cents: int = 0
+    amount_kobo: int = 0
 
 
 def open_escalations(s: Session) -> list[Escalation]:
@@ -49,7 +49,7 @@ def _check_name(admin: str) -> str:
 
 def approve_escalation(
     sessions: sessionmaker[Session], executor: Executor, secret: bytes,
-    escalation_id: int, admin: str, amount_cents: int | None = None,
+    escalation_id: int, admin: str, amount_kobo: int | None = None,
 ) -> AdminResult:
     admin = _check_name(admin)
     with sessions() as s:
@@ -58,13 +58,13 @@ def approve_escalation(
             raise AdminError("Escalation not found or already resolved.")
         if esc.order_id is None:
             raise AdminError("No verified order on this escalation; reply to the customer by email instead.")
-        amount = amount_cents if amount_cents is not None else esc.proposed_amount_cents
+        amount = amount_kobo if amount_kobo is not None else esc.proposed_amount_kobo
         if not amount or amount <= 0:
             raise AdminError("Enter the refund amount for this case.")
         order = s.get(Order, esc.order_id)
         items = tuple(esc.line_item_ids) or tuple(i.id for i in order.items)
         decision = Decision(Outcome.APPROVE, order.id, items, tuple(esc.rule_ids) + ("HUMAN",),
-                            f"Approved by {admin}", amount_cents=amount)
+                            f"Approved by {admin}", amount_kobo=amount)
     token = sign_decision(decision, secret, now(), issuer=f"human:{admin}")
     try:
         result = executor.execute(token)
@@ -74,7 +74,7 @@ def approve_escalation(
         esc = s.get(Escalation, escalation_id)
         esc.status, esc.resolved_by = "approved", admin
         s.commit()
-    return AdminResult(f"Refunded {money(result.amount_cents)} ({result.gateway_ref}).", result.amount_cents)
+    return AdminResult(f"Refunded {money(result.amount_kobo)} ({result.gateway_ref}).", result.amount_kobo)
 
 
 def deny_escalation(sessions: sessionmaker[Session], escalation_id: int, admin: str) -> AdminResult:
@@ -103,7 +103,7 @@ def receive_return(
                                       refund_history(s, order.customer_id), now())
         if d.outcome == Outcome.ESCALATE:
             esc = create_escalation(s, order, f"Refund for received return {ret.id}", d.rule_ids, d.reason,
-                                    d.proposed_amount_cents, d.line_item_ids)
+                                    d.proposed_amount_kobo, d.line_item_ids)
             s.commit()
             return AdminResult(f"Return received. Refund needs approval (escalation {esc.id}): {d.reason}")
         s.commit()
@@ -113,5 +113,5 @@ def receive_return(
         result = executor.execute(sign_decision(d, secret, now()))
     except ExecutionRejected as exc:
         raise AdminError(f"Executor rejected the refund: {exc}") from exc
-    return AdminResult(f"Return received. Refunded {money(result.amount_cents)} under {', '.join(d.rule_ids)}.",
-                       result.amount_cents)
+    return AdminResult(f"Return received. Refunded {money(result.amount_kobo)} under {', '.join(d.rule_ids)}.",
+                       result.amount_kobo)

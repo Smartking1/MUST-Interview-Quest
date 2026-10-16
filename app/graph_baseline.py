@@ -57,21 +57,21 @@ def build_tools(sessions: sessionmaker[Session]) -> list[StructuredTool]:
             if not o:
                 return "No such order."
             c = s.get(Customer, o.customer_id)
-            items = "\n".join(f"- line_item_id {i.id}: {i.name} ({i.category}) {money(i.price_cents)}"
+            items = "\n".join(f"- line_item_id {i.id}: {i.name} ({i.category}) {money(i.price_kobo)}"
                               f"{' final sale' if i.final_sale else ''}" for i in o.items)
-            return (f"Order {o.order_number} for {c.name} <{c.email}>, status {o.status}, paid {money(o.paid_cents)}, "
+            return (f"Order {o.order_number} for {c.name} <{c.email}>, status {o.status}, paid {money(o.paid_kobo)}, "
                     f"delivered {o.delivered_at.date() if o.delivered_at else 'not yet'}, address {o.shipping_address}\n{items}")
 
-    def issue_refund(order_number: str, amount_cents: int, reason: str) -> str:
-        """Issue a refund to the customer's card for the given amount in cents."""
+    def issue_refund(order_number: str, amount_kobo: int, reason: str) -> str:
+        """Issue a refund to the customer's card for the given amount in kobo (1 naira = 100 kobo)."""
         with sessions() as s:
             o = find_order(s, order_number)
             if not o:
                 return "No such order."
             r = gateway.refund(s, order_id=o.id, payment_ref=o.gateway_payment_ref,
-                               amount_cents=int(amount_cents), idempotency_key=None)
+                               amount_kobo=int(amount_kobo), idempotency_key=None)
             s.commit()
-            return f"Refund of {money(r.amount_cents)} issued ({r.gateway_ref})."
+            return f"Refund of {money(r.amount_kobo)} issued ({r.gateway_ref})."
 
     def cancel_order(order_number: str) -> str:
         """Mark an order as cancelled. Issue the refund separately."""

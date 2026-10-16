@@ -13,13 +13,13 @@ from app.clock import now
 from app.models import Customer, Escalation, Order
 
 
-def money(cents: int) -> str:
-    return f"${cents / 100:,.2f}"
+def money(kobo: int) -> str:
+    return f"₦{kobo / 100:,.2f}"
 
 
 def describe_order(order: Order) -> str:
     lines = [
-        f"Order {order.order_number}: status {order.status}, paid {money(order.paid_cents)}.",
+        f"Order {order.order_number}: status {order.status}, paid {money(order.paid_kobo)}.",
         f"Shipping address: {order.shipping_address}.",
     ]
     if order.delivered_at:
@@ -28,7 +28,7 @@ def describe_order(order: Order) -> str:
         lines.append(f"Shipped on {order.shipped_at.date().isoformat()}.")
     for i in sorted(order.items, key=lambda i: i.id):
         flag = ", final sale" if i.final_sale else ""
-        lines.append(f"- line_item_id {i.id}: {i.name} ({i.category}), {i.qty} x {money(i.price_cents)}{flag}")
+        lines.append(f"- line_item_id {i.id}: {i.name} ({i.category}), {i.qty} x {money(i.price_kobo)}{flag}")
     return "\n".join(lines)
 
 
@@ -53,7 +53,7 @@ def create_escalation(
     esc = Escalation(
         customer_id=customer.id if customer else None, order_id=order.id if order else None,
         line_item_ids=list(line_item_ids), request=request, rule_ids=list(rule_ids), reason=reason,
-        summary="\n".join(parts), proposed_amount_cents=proposed, status="open", created_at=now(),
+        summary="\n".join(parts), proposed_amount_kobo=proposed, status="open", created_at=now(),
     )
     s.add(esc)
     s.flush()

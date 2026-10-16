@@ -16,7 +16,7 @@ def run(tools, name, **args):
 
 def ledger(sessions):
     with sessions() as s:
-        return s.scalar(select(func.coalesce(func.sum(GatewayLedger.amount_cents), 0)))
+        return s.scalar(select(func.coalesce(func.sum(GatewayLedger.amount_kobo), 0)))
 
 
 def test_order_tools_require_verification(sessions):
@@ -51,12 +51,12 @@ def test_cancel_unshipped_order_pays_full_amount_once(sessions):
     _, t = setup(sessions)
     run(t, "verify_identity", order_number="HM-1001", email="amara.okafor@example.com")
     out = run(t, "cancel_order", order_number="HM-1001")
-    assert "$50.98" in out
+    assert "₦48,500.00" in out
     assert "Cannot cancel" in run(t, "cancel_order", order_number="HM-1001")
-    assert ledger(sessions) == 5_098
+    assert ledger(sessions) == 4_850_000
 
 
-def test_cancel_over_200_escalates_with_actionable_summary(sessions):
+def test_cancel_over_limit_escalates_with_actionable_summary(sessions):
     ctx, t = setup(sessions)
     ctx.last_customer_message = "Please cancel HM-1002"
     run(t, "verify_identity", order_number="HM-1002", email="ben.carter@example.com")
@@ -65,7 +65,7 @@ def test_cancel_over_200_escalates_with_actionable_summary(sessions):
     assert ledger(sessions) == 0
     with sessions() as s:
         esc = s.scalar(select(Escalation))
-        for needle in ("Ben Carter", "HM-1002", "Espresso Machine", "R8", "$293.99", "Please cancel HM-1002"):
+        for needle in ("Ben Carter", "HM-1002", "Espresso Machine", "R8", "₦423,500.00", "Please cancel HM-1002"):
             assert needle in esc.summary
 
 

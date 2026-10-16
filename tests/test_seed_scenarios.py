@@ -11,6 +11,7 @@ from app.policy_engine import (
     evaluate_request,
 )
 from app.repository import find_order, order_snapshot, refund_history
+from app.seed import N
 
 R = ReasonCode
 
@@ -60,11 +61,11 @@ def receive_all(sessions, number, now, opened=False, tags=False, requested_days_
 
 
 def test_hm1008_opened_return_pays_less_restocking_fee(sessions, frozen_now):
-    assert receive_all(sessions, "HM-1008", frozen_now, opened=True).amount_cents == 10_200
+    assert receive_all(sessions, "HM-1008", frozen_now, opened=True).amount_kobo == 10_200_000
 
 
 def test_hm1009_fashion_with_tags_pays_in_full(sessions, frozen_now):
-    assert receive_all(sessions, "HM-1009", frozen_now, opened=True, tags=True).amount_cents == 18_500
+    assert receive_all(sessions, "HM-1009", frozen_now, opened=True, tags=True).amount_kobo == 18_500_000
 
 
 def test_hm1010_opened_after_15_days_denied(sessions, frozen_now):
@@ -74,7 +75,7 @@ def test_hm1010_opened_after_15_days_denied(sessions, frozen_now):
 
 def test_hm1018_discounted_order_capped_at_paid(sessions, frozen_now):
     d = receive_all(sessions, "HM-1018", frozen_now)
-    assert d.amount_cents == 11_000 + 499 - 3_000
+    assert d.amount_kobo == N(110_000) + N(3_500) - N(30_000)
 
 
 def test_hm1019_whole_order_return_escalates_r8(sessions, frozen_now):
@@ -85,10 +86,10 @@ def test_hm1020_laptop_escalates_r8(sessions, frozen_now):
     assert receive_all(sessions, "HM-1020", frozen_now).outcome == Outcome.ESCALATE
 
 
-def test_hm1021_exactly_200_auto_approves(sessions, frozen_now):
+def test_hm1021_exactly_at_limit_auto_approves(sessions, frozen_now):
     d = receive_all(sessions, "HM-1021", frozen_now)
     assert d.outcome == Outcome.APPROVE
-    assert d.amount_cents == 20_000
+    assert d.amount_kobo == N(300_000)
 
 
 def test_hm1024_third_refund_in_90_days_escalates_r9(sessions, frozen_now):

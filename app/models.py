@@ -1,4 +1,4 @@
-"""Database schema for Harbor Market. All money is integer cents."""
+"""Database schema for Harbor Market. All money is integer kobo."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ class Order(Base):
     order_number: Mapped[str] = mapped_column(String, unique=True)
     customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"))
     status: Mapped[str] = mapped_column(String)  # placed, shipped, delivered, cancelled
-    paid_cents: Mapped[int] = mapped_column(Integer)
+    paid_kobo: Mapped[int] = mapped_column(Integer)
     shipping_address: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     shipped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -42,7 +42,7 @@ class LineItem(Base):
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"))
     name: Mapped[str] = mapped_column(String)
     category: Mapped[str] = mapped_column(String)  # electronics, fashion, home
-    price_cents: Mapped[int] = mapped_column(Integer)
+    price_kobo: Mapped[int] = mapped_column(Integer)
     qty: Mapped[int] = mapped_column(Integer, default=1)
     final_sale: Mapped[bool] = mapped_column(Boolean, default=False)
     order: Mapped[Order] = relationship(back_populates="items")
@@ -70,7 +70,7 @@ class Refund(Base):
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"))
     customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"))
     line_item_ids: Mapped[list[int]] = mapped_column(JSON)
-    amount_cents: Mapped[int] = mapped_column(Integer)
+    amount_kobo: Mapped[int] = mapped_column(Integer)
     rule_ids: Mapped[list[str]] = mapped_column(JSON)
     issuer: Mapped[str] = mapped_column(String)
     status: Mapped[str] = mapped_column(String, default="succeeded")  # pending, succeeded, failed
@@ -88,7 +88,7 @@ class Escalation(Base):
     rule_ids: Mapped[list[str]] = mapped_column(JSON)
     reason: Mapped[str] = mapped_column(Text)
     summary: Mapped[str] = mapped_column(Text)
-    proposed_amount_cents: Mapped[int | None] = mapped_column(Integer)
+    proposed_amount_kobo: Mapped[int | None] = mapped_column(Integer)
     image_description: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String, default="open")  # open, approved, denied
     resolved_by: Mapped[str | None] = mapped_column(String)
@@ -114,7 +114,7 @@ class GatewayLedger(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     agent: Mapped[str] = mapped_column(String)  # trusted, baseline
     order_id: Mapped[int] = mapped_column(Integer)
-    amount_cents: Mapped[int] = mapped_column(Integer)
+    amount_kobo: Mapped[int] = mapped_column(Integer)
     idempotency_key: Mapped[str | None] = mapped_column(String)
     gateway: Mapped[str] = mapped_column(String)
     gateway_ref: Mapped[str | None] = mapped_column(String)

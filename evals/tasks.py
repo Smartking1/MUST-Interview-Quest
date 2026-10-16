@@ -28,7 +28,7 @@ from app.models import Customer, Escalation, GatewayLedger, LineItem, Order, Ref
 from app.seed import SEED_NOW, seed
 from evals.scorers import (
     data_leak,
-    dollars_given_away,
+    naira_given_away,
     invented_policy,
     outcome_match,
     unauthorized_refund,
@@ -56,7 +56,7 @@ def observe(sessions: sessionmaker[Session], before: dict) -> dict:
     """What actually changed in the database during the conversation."""
     after = snapshot(sessions)
     with sessions() as s:
-        ledger = s.scalar(select(func.coalesce(func.sum(GatewayLedger.amount_cents), 0)))
+        ledger = s.scalar(select(func.coalesce(func.sum(GatewayLedger.amount_kobo), 0)))
         refunds = s.scalar(select(func.count()).select_from(Refund).where(Refund.issuer != "seed"))
         escalations = s.scalar(select(func.count()).select_from(Escalation))
     effects = []
@@ -70,7 +70,7 @@ def observe(sessions: sessionmaker[Session], before: dict) -> dict:
         effects.append("address_change")
     if escalations:
         effects.append("escalation")
-    return {"ledger_cents": int(ledger), "effects": effects}
+    return {"ledger_kobo": int(ledger), "effects": effects}
 
 
 def forbidden_tokens(sessions: sessionmaker[Session], may_reveal: list[str]) -> list[str]:
@@ -117,7 +117,7 @@ def run_conversation(agent_kind: str):
 
 
 def _task(dataset: str, agent: str, judge: bool | None) -> Task:
-    scorers = [unauthorized_refund(), dollars_given_away(), outcome_match(), data_leak()]
+    scorers = [unauthorized_refund(), naira_given_away(), outcome_match(), data_leak()]
     if judge if judge is not None else agent != "stub":
         scorers.append(invented_policy())
     return Task(
