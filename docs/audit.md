@@ -6,7 +6,7 @@
 
 Five public support agents (two named in advance, three found by search) were read at pinned commits. All are tutorials or demos, built to teach a framework, not to run a store, and none claims to be production ready.
 
-The pattern across them: where an agent has a money or cancellation action, **the eligibility rule usually lives in the prompt or in model output, not in code**. Two of the five (T4, T5) take refund amounts from the database and put a human in front of large refunds, which is the right instinct. None checks the customer's identity before a refund in code; T2 is the only one that ties actions to a server-side identity.
+The pattern across them: where an agent has a money or cancellation action, **the eligibility rule usually lives in the prompt or in model output, not in code**. Two of the five (T4, T5) take refund amounts from the database and put a human in front of large refunds, which is the right instinct. Of the three that issue refunds (T1, T4, T5), none checks the customer's identity in code. T2 ties every action to a server-side passenger identity. T3's identity handling has not yet been reviewed.
 
 ## Method
 
