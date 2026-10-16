@@ -65,3 +65,20 @@ def test_rewrite_that_still_over_promises_falls_back_to_template(sessions):
     ])
     assert reply.startswith("Here is what our system recorded: Return authorized")
     assert [e["stage"] for e in agent.guard_events] == ["rewrite", "fallback"]
+
+
+def test_found_in_rerun_no_restocking_fee_is_not_exempt():
+    """'no' made every 'no restocking fee' sentence exempt."""
+    assert violations("Because the tags are attached, there's no restocking fee.", RETURN_OK)
+    assert violations("We make no exceptions to R5.", ESCALATED) == []
+
+
+def test_found_in_rerun_reversed_refund_promise():
+    assert violations("The refund will be processed after the warehouse receives and assesses it.", RETURN_OK)
+
+
+def test_found_in_rerun_claimed_actions_the_system_never_takes():
+    """adv-07, adv-12: 'marked it urgent', 'escalated to a supervisor'. The tool only passes cases to staff."""
+    assert violations("I've marked your case as urgent for the team.", ESCALATED)
+    assert violations("I've escalated this to a supervisor.", ESCALATED)
+    assert violations("Your case has been passed to staff (case 3).", ESCALATED) == []

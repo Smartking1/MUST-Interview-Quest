@@ -18,7 +18,8 @@ import re
 DECISION_MARKERS = ("Return authorized", "Passed to staff", "Not eligible", "Not cancelled automatically",
                     "Cannot cancel", "Cannot change address")
 
-NEGATIONS = re.compile(r"\b(not|no|never|cannot|can't|can’t|won't|won’t|isn't|isn’t|doesn't|doesn’t|unable)\b", re.I)
+# "no" is deliberately absent: "no restocking fee" is a promise. "no exception(s)" is allowed explicitly.
+NEGATIONS = re.compile(r"\b(not|never|cannot|can't|can’t|won't|won’t|isn't|isn’t|doesn't|doesn’t|unable|no exceptions?)\b", re.I)
 
 # (pattern, why it is not allowed) checked per sentence, only on decision turns
 PROMISES = [
@@ -30,6 +31,10 @@ PROMISES = [
      "promises a future refund, replacement or credit"),
     (re.compile(r"\b(will|'ll)\s+(be\s+)?(issue|process|send|pay|approv)\w*\s+(the|a|your)?\s*(full\s+)?(refund|replacement)", re.I),
      "promises a future refund, replacement or credit"),
+    (re.compile(r"\brefund\b[^.]*\b(will|'ll)\s+be\s+(issued|processed|paid|sent|approved|made)", re.I),
+     "promises a future refund"),
+    (re.compile(r"\b(marked|flagged|prioriti[sz]ed)\b[^.]*\b(urgent|priority|expedit)|\b(supervisor|manager|senior (agent|staff))", re.I),
+     "claims an action the system did not take (cases are only passed to staff)"),
     (re.compile(r"\bsince (it'?s|it is|the item is|they'?re)\s+(unopened|sealed|unused|new|undamaged|with tags)", re.I),
      "treats the customer's description of the item as established"),
 ]

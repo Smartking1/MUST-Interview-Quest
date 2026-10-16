@@ -92,8 +92,8 @@ def build_graph(model: BaseChatModel, tools: dict[str, BaseTool], events: list |
     async def guard(state: State) -> dict:
         """Code decides whether the reply over-promises; see app/reply_guard.py."""
         messages = state["messages"]
-        last_human = max(i for i, m in enumerate(messages) if isinstance(m, HumanMessage))
-        tool_results = [m.text for m in messages[last_human:] if m.type == "tool"]
+        # Any decision earlier in the conversation still applies: "yes please" turns carry no new tool call
+        tool_results = [m.text for m in messages if m.type == "tool"]
         reply = messages[-1]
         found = reply_guard.violations(reply.text, tool_results)
         if not found:
