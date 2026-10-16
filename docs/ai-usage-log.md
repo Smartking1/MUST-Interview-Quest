@@ -79,3 +79,17 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Failures hit: Docker Desktop did not start within two minutes, so `stripe-mock` could not be run. The Stripe gateway is unit-tested against a recording stand-in instead; the real check waits for test keys.
 - Not yet done: one real test-mode refund end to end (needs Stripe test keys); any run against a real model (needs the OpenAI key and model ID).
 - Time spent: session ended about 06:24 WAT (time from the system clock; start time not recorded). **[Kingsley to confirm]**
+
+## Day 3, 2026-10-16, session 3
+- Goal: switch the payment gateway to Paystack.
+- What Kingsley directed: switch to Paystack, because he cannot create a Stripe account in Nigeria.
+- What AI produced:
+  - Research: Paystack's docs site returned 403 to automated fetches, so AI read Paystack's official OpenAPI spec from GitHub instead. Found that refunds take no idempotency key and the charge API takes no raw card details.
+  - Two-phase executor (claim, call, finish), `Refund.status`, and limits that count pending refunds.
+  - `PaystackGateway` (httpx, test keys only), `app/paystack_setup.py` (one checkout, then reusable authorization for the rest), `app/payment_refs.py` (references survive demo resets). Removed the Stripe gateway, its tests and the `stripe` dependency; added `httpx` as an explicit dependency (it was already installed through other packages).
+  - Tests: request shape sent to Paystack, 4xx versus 5xx handling, crash after paying, timeout, live key refusal, references surviving a reset. 141 tests, keyless.
+- Kept: all of the above.
+- Rejected or changed, and why: AI first planned to mark any gateway exception as `failed`. Changed before committing: a timeout may have paid, so only a definite rejection marks a refund failed (decisions.md).
+- Failures hit: `paystack.com/docs` returned 403 to both the fetch tool and curl; worked around with the official spec on GitHub. One existing executor test encoded the old behaviour (roll back and retry the same decision) and failed as expected; rewritten for the new behaviour.
+- Not yet done: the real test-mode payment and refund need Kingsley's Paystack test secret key and one checkout payment with a test card.
+- Time spent: (to update at end of session)

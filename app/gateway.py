@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import os
 import uuid
+
+import httpx
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -20,6 +22,10 @@ from app.models import GatewayLedger
 
 class GatewayError(Exception):
     pass
+
+
+class GatewayRejected(GatewayError):
+    """The gateway definitely did not move money. Anything else is an unknown outcome."""
 
 
 @dataclass(frozen=True)
@@ -50,7 +56,7 @@ class FakeGateway:
         amount_cents: int, idempotency_key: str | None,
     ) -> GatewayResult:
         if amount_cents <= 0:
-            raise GatewayError("Refund amount must be positive.")
+            raise GatewayRejected("Refund amount must be positive.")
         if idempotency_key:
             prior = session.scalar(
                 select(GatewayLedger).where(GatewayLedger.idempotency_key == idempotency_key)
@@ -67,66 +73,77 @@ class FakeGateway:
         return GatewayResult(ref, amount_cents)
 
 
-class StripeGateway:
-    """Stripe refunds in TEST MODE only (architecture invariant 9).
+class PaystackGateway:
+    """Paystack refunds in TEST MODE only (architecture invariant 9).
 
-    Refuses live keys at construction, so the app refuses to start on one.
-    Refunds the order's PaymentIntent with decision_id as Stripe's
-    idempotency key, so a retried decision can never refund twice.
+    Refuses anything but an sk_test_ key, so the app refuses to start on a
+    live key. Paystack refunds take no idempotency key; the executor's
+    two-phase claim provides that guarantee, and the decision_id is sent as
+    the merchant note so any refund can be traced in the Paystack dashboard.
+
+    Amounts: the store prices in USD cents. A Nigerian Paystack test account
+    settles in NGN, so test refunds are sent in PAYSTACK_CURRENCY subunits
+    one to one (1 US cent = 1 kobo by default). This is a test-mode
+    convenience, stated in the README, not a conversion.
     """
 
-    name = "stripe"
+    name = "paystack"
 
-    def __init__(self, api_key: str, api_base: str | None = None, client=None, agent: str = "trusted"):
-        check_test_key(api_key, prefix="sk_test_", allow_any=api_base is not None)
+    def __init__(self, secret_key: str, currency: str = "NGN", client: httpx.Client | None = None,
+                 agent: str = "trusted", base_url: str = "https://api.paystack.co"):
+        check_test_key(secret_key, prefix="sk_test_")
         self.agent = agent
-        if client is None:
-            import stripe
-
-            kwargs = {"base_addresses": {"api": api_base}} if api_base else {}
-            client = stripe.StripeClient(api_key, max_network_retries=2, **kwargs)
-        self._client = client
+        self.currency = currency
+        self._http = client or httpx.Client(
+            base_url=base_url, timeout=30, headers={"Authorization": f"Bearer {secret_key}"})
 
     def refund(
         self, session: Session, *, order_id: int, payment_ref: str | None,
         amount_cents: int, idempotency_key: str | None,
     ) -> GatewayResult:
         if amount_cents <= 0:
-            raise GatewayError("Refund amount must be positive.")
+            raise GatewayRejected("Refund amount must be positive.")
         if not payment_ref:
-            raise GatewayError("Order has no Stripe payment to refund. Run app.stripe_setup first.")
-        options = {"idempotency_key": idempotency_key} if idempotency_key else None
-        refund = self._client.v1.refunds.create(
-            params={"payment_intent": payment_ref, "amount": amount_cents,
-                    "metadata": {"order_id": str(order_id), "decision_id": idempotency_key or ""}},
-            options=options,
-        )
+            raise GatewayRejected("Order has no Paystack payment to refund. Run app.paystack_setup first.")
+        response = self._http.post("/refund", json={
+            "transaction": payment_ref, "amount": amount_cents, "currency": self.currency,
+            "merchant_note": f"Trusted Support decision {idempotency_key}",
+        })
+        if 400 <= response.status_code < 500:
+            raise GatewayRejected(f"Paystack rejected the refund: {_message(response)}")
+        response.raise_for_status()  # 5xx: outcome unknown, the executor leaves the refund pending
+        data = response.json()["data"]
+        ref = f"paystack_refund_{data['id']}"
         session.add(GatewayLedger(
-            agent=self.agent, order_id=order_id, amount_cents=refund.amount,
-            idempotency_key=idempotency_key, gateway=self.name, gateway_ref=refund.id,
-            created_at=now(),
+            agent=self.agent, order_id=order_id, amount_cents=amount_cents,
+            idempotency_key=idempotency_key, gateway=self.name, gateway_ref=ref, created_at=now(),
         ))
         session.flush()
-        return GatewayResult(refund.id, refund.amount)
+        return GatewayResult(ref, amount_cents)
 
 
-def check_test_key(key: str, prefix: str, allow_any: bool = False) -> None:
+def _message(response: httpx.Response) -> str:
+    try:
+        return response.json().get("message", response.text)
+    except ValueError:
+        return response.text
+
+
+def check_test_key(key: str, prefix: str) -> None:
     if not key:
         raise GatewayError("No payment API key set.")
     if "_live_" in key:
         raise GatewayError("Refusing to start: a LIVE payment key was supplied. Use a test-mode key.")
-    if not allow_any and not key.startswith(prefix):
+    if not key.startswith(prefix):
         raise GatewayError(f"Payment key must be a test key starting with {prefix!r}.")
 
 
 def gateway_from_env() -> PaymentGateway:
-    """PAYMENT_GATEWAY=fake (default) or stripe (needs STRIPE_SECRET_KEY, test mode only).
-
-    STRIPE_API_BASE points at a local stripe-mock (for example http://localhost:12111).
-    """
+    """PAYMENT_GATEWAY=fake (default) or paystack (needs PAYSTACK_SECRET_KEY, test mode only)."""
     kind = os.environ.get("PAYMENT_GATEWAY", "fake")
     if kind == "fake":
         return FakeGateway("trusted")
-    if kind == "stripe":
-        return StripeGateway(os.environ.get("STRIPE_SECRET_KEY", ""), os.environ.get("STRIPE_API_BASE"))
+    if kind == "paystack":
+        return PaystackGateway(os.environ.get("PAYSTACK_SECRET_KEY", ""),
+                               os.environ.get("PAYSTACK_CURRENCY", "NGN"))
     raise GatewayError(f"Unknown PAYMENT_GATEWAY {kind!r}")

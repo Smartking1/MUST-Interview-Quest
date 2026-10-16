@@ -73,6 +73,7 @@ class Refund(Base):
     amount_cents: Mapped[int] = mapped_column(Integer)
     rule_ids: Mapped[list[str]] = mapped_column(JSON)
     issuer: Mapped[str] = mapped_column(String)
+    status: Mapped[str] = mapped_column(String, default="succeeded")  # pending, succeeded, failed
     gateway_ref: Mapped[str | None] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 

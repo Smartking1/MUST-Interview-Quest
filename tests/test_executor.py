@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import func, select
 
 from app.executor import ExecutionRejected, Executor
-from app.gateway import FakeGateway
+from app.gateway import FakeGateway, GatewayRejected
 from app.models import GatewayLedger, Order, Refund
 from app.policy_engine import Decision, Outcome
 from app.repository import find_order
@@ -95,16 +95,56 @@ def test_r1_execution_cancels_the_order(sessions, executor, frozen_now):
         assert find_order(s, "HM-1001").status == "cancelled"
 
 
-def test_gateway_failure_rolls_back_the_refund_record(sessions, frozen_now):
-    class BrokenGateway(FakeGateway):
+def test_gateway_rejection_is_recorded_and_the_decision_cannot_be_replayed(sessions, frozen_now):
+    class RejectingGateway(FakeGateway):
         def refund(self, *a, **k):
-            raise RuntimeError("gateway down")
+            raise GatewayRejected("card network said no")
 
-    ex = Executor(sessions, BrokenGateway(), SECRET)
     token = sign_decision(approved(sessions, "HM-1005", 7_900), SECRET, frozen_now)
-    with pytest.raises(RuntimeError):
-        ex.execute(token)
+    with pytest.raises(GatewayRejected):
+        Executor(sessions, RejectingGateway(), SECRET).execute(token)
     with sessions() as s:
-        assert s.scalar(select(func.count()).select_from(Refund).where(Refund.issuer != "seed")) == 0
-    # The same decision can be retried once the gateway is back
-    assert Executor(sessions, FakeGateway(), SECRET).execute(token).amount_cents == 7_900
+        [r] = s.scalars(select(Refund).where(Refund.issuer != "seed")).all()
+        assert r.status == "failed"
+    assert ledger_total(sessions) == 0
+    # The same token is spent; a fresh policy decision is needed, and a failed refund does not block it
+    with pytest.raises(ExecutionRejected, match="already been used"):
+        Executor(sessions, FakeGateway(), SECRET).execute(token)
+    fresh = sign_decision(approved(sessions, "HM-1005", 7_900), SECRET, frozen_now)
+    assert Executor(sessions, FakeGateway(), SECRET).execute(fresh).amount_cents == 7_900
+
+
+def test_crash_after_gateway_pays_leaves_pending_refund_that_blocks_a_second_payout(sessions, frozen_now):
+    """Paystack refunds are not idempotent. If we die after paying but before recording, never pay again."""
+    class CrashAfterPaying(Executor):
+        def _finish(self, *a, **k):
+            raise SystemExit("process killed")
+
+    with pytest.raises(SystemExit):
+        CrashAfterPaying(sessions, FakeGateway(), SECRET).execute(
+            sign_decision(approved(sessions, "HM-1005", 7_900), SECRET, frozen_now))
+    assert ledger_total(sessions) == 7_900
+    with sessions() as s:
+        [r] = s.scalars(select(Refund).where(Refund.issuer != "seed")).all()
+        assert r.status == "pending"
+    with pytest.raises(ExecutionRejected, match="R7"):
+        Executor(sessions, FakeGateway(), SECRET).execute(
+            sign_decision(approved(sessions, "HM-1005", 7_900), SECRET, frozen_now))
+    assert ledger_total(sessions) == 7_900
+
+
+def test_gateway_timeout_leaves_refund_pending_and_blocks_retry(sessions, frozen_now):
+    """A timeout might have paid. Never treat it as a failure that frees the money for another try."""
+    class TimeoutGateway(FakeGateway):
+        def refund(self, *a, **k):
+            raise TimeoutError("no response")
+
+    with pytest.raises(TimeoutError):
+        Executor(sessions, TimeoutGateway(), SECRET).execute(
+            sign_decision(approved(sessions, "HM-1005", 7_900), SECRET, frozen_now))
+    with sessions() as s:
+        [r] = s.scalars(select(Refund).where(Refund.issuer != "seed")).all()
+        assert r.status == "pending"
+    with pytest.raises(ExecutionRejected, match="R7"):
+        Executor(sessions, FakeGateway(), SECRET).execute(
+            sign_decision(approved(sessions, "HM-1005", 7_900), SECRET, frozen_now))

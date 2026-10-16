@@ -69,3 +69,19 @@ def test_human_cannot_pay_more_than_paid(client, tmp_path):
     r = client.post(f"/api/admin/escalations/{esc['id']}/approve", json={"admin": "K", "amount_cents": 1_000_000})
     assert r.status_code == 400 and "R7" in r.json()["detail"]
     assert client.get("/api/admin/ledger").json() == []
+
+
+def test_saved_payment_refs_survive_a_demo_reset(tmp_path, frozen_now, monkeypatch):
+    import json
+
+    from app.db import make_engine, make_session_factory
+    from app.repository import find_order
+
+    refs = tmp_path / "refs.json"
+    refs.write_text(json.dumps({"HM-1005": "harbor-hm-1005-abc"}))
+    monkeypatch.setenv("PAYMENT_REFS_FILE", str(refs))
+    url = f"sqlite:///{tmp_path / 'refs.db'}"
+    client = TestClient(create_app(url))
+    client.post("/api/admin/reset")
+    with make_session_factory(make_engine(url))() as s:
+        assert find_order(s, "HM-1005").gateway_payment_ref == "harbor-hm-1005-abc"

@@ -17,7 +17,7 @@ from sqlalchemy import inspect as sa_inspect
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import admin
+from app import admin, payment_refs
 from app.attachments import AttachmentError
 from app.attachments import validate as validate_image
 from app.clock import now
@@ -62,6 +62,7 @@ def create_app(db_url: str | None = None) -> FastAPI:
         init_db(engine)
         with Session(engine) as s:
             seed(s, now())  # demo: seed relative to the real clock so dates read naturally
+            payment_refs.apply_saved(s)
     sessions = make_session_factory(engine)
     secret = decision_secret()
     executor = Executor(sessions, gateway_from_env(), secret)
@@ -179,6 +180,7 @@ def create_app(db_url: str | None = None) -> FastAPI:
         init_db(engine)
         with Session(engine) as s:
             seed(s, now())
+            payment_refs.apply_saved(s)
         conversations.clear()
         return {"message": "Database reset to seed data."}
 

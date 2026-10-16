@@ -81,7 +81,7 @@ Places where policy.md is silent or ambiguous, and how the engine reads them. Ea
 - Decision: the chat page has Trusted, Baseline and Side by side modes. The demo needs the same attack against both agents in one frame. The baseline pane is labelled unsafe in the UI.
 - The API takes JSON only. Image upload (first on the cut list) will send base64 in JSON, which avoids adding `python-multipart`.
 
-## 2026-10-16: Stripe gateway refunds the order's PaymentIntent, keyed by decision_id
+## 2026-10-16: Stripe gateway refunds the order's PaymentIntent, keyed by decision_id (superseded, see below)
 - Decision: `StripeGateway` refunds the PaymentIntent stored on the order, with `decision_id` as Stripe's idempotency key, so a retried decision cannot refund twice even if our database write fails after Stripe succeeds. `app/stripe_setup.py` creates one confirmed test-mode PaymentIntent per seeded order (test card `pm_card_visa`) and mirrors seeded refunds.
 - Live keys are refused at construction (`_live_` anywhere in the key), so the app refuses to start on one (invariant 9). Tested.
 - Fallback order unchanged: Stripe test mode, then `stripe-mock` (via `STRIPE_API_BASE`), then Paystack. Docker Desktop did not start on this machine on 2026-10-16, so `stripe-mock` was not run; the gateway is unit-tested against a recording stand-in until test keys arrive.
@@ -90,3 +90,15 @@ Places where policy.md is silent or ambiguous, and how the engine reads them. Ea
 - Decision: a photo uploaded in chat is validated (type, magic bytes, 5 MB), stored, and the model receives only a server-written system note that a photo exists. On escalation the photo is linked to the case; a vision model may describe it for staff, with any text in the photo quoted as content. The description goes into the staff summary only. The policy engine never receives the photo or its description.
 - Alternative rejected: show the photo to the chat model and tell it to ignore instructions in images. That is a prompt-level defense against image injection, the exact habit this project drops (assumption #1).
 - The baseline passes photos straight to its model, as a conventional vision-enabled agent would. That sets up the Day 4 image injection attacks as a fair comparison.
+
+## 2026-10-16: Payment gateway switched from Stripe to Paystack
+- Context: Kingsley cannot open a Stripe account in Nigeria. The directive's fallback order is Stripe test mode, then `stripe-mock`, then Paystack test mode. A real test-mode gateway (Paystack) is worth more for the demo than a local mock of one he cannot use, so Paystack replaces Stripe. The Stripe gateway code and dependency were removed rather than kept unused.
+- Source: Paystack's official OpenAPI spec (github.com/PaystackOSS/openapi, commit 07c5abc), read because paystack.com/docs blocked automated fetches. Refund is `POST /refund` with `transaction` (reference), `amount` in subunits, `currency`, `merchant_note`. **The refund endpoint takes no idempotency key**, unlike Stripe.
+- Test payments: the charge API takes no raw card details, so `app/paystack_setup.py` opens one hosted checkout (paid by Kingsley with a Paystack test card), then charges every other seeded order with that card's reusable authorization. References are kept in a local file and re-applied after every demo reset.
+- Currency: the store prices in USD cents; a Nigerian test account settles in NGN. Test refunds send cents one to one as kobo (`PAYSTACK_CURRENCY`). A test-mode convenience, to be stated in the README.
+
+## 2026-10-16: The executor claims a decision before calling the gateway (two-phase)
+- Context: with Stripe, a crash after the gateway paid but before our database committed was safe, because retrying with the same idempotency key returned the first refund. Paystack has no such key, so the same crash followed by a retry would refund twice.
+- Decision: the executor first commits a `pending` refund row (the unique `decision_id` is the claim), then calls the gateway, then marks it `succeeded`, or `failed` only when the gateway definitely rejected it (4xx). A timeout or 5xx leaves it `pending`. Pending refunds count toward R7, R8 and R9 and are never retried automatically; the `decision_id` is sent as Paystack's merchant note so a human can reconcile in the dashboard.
+- Tests: a crash after paying blocks a second payout; a timeout leaves the refund pending and blocks a retry; a definite rejection frees the amount for a fresh decision, but never the same token.
+- Assumption: #1. The safety property moved from a gateway feature into our own code, so it holds whichever gateway is used.

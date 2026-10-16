@@ -11,7 +11,7 @@ dependencies = [
     "langchain-openai",
     "inspect-ai",
     "openai",
-    "stripe>=16.0.0",
+    "httpx>=0.28.1",
 ]
 
 [dependency-groups]
