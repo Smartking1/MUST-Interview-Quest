@@ -42,11 +42,25 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
   - Tests passed on the first run, which on its own proves little. AI deliberately broke three boundaries (R8 `>` changed to `>=`, R2 window widened to 31 days, R9 window widened to 90 days). The tests caught each one (2, 2 and 1 failures), and the original code was restored.
 - Time spent: about 40 minutes (from timestamps). **[Kingsley to confirm, and add any time spent outside the session]**
 
-## Day 3, 2026-10-16, session 1, from about 05:50
-- Goal: backfill this log, then continue development (seed data, eval datasets, scorers).
-- What Kingsley directed: said "go on with development", interrupted, then asked for the log to be backfilled where needed, noting it is evidence for a job interview.
-- What AI produced: this restructured log. Day 2 times rebuilt from file and git timestamps. Day 1 marked for Kingsley to fill instead of reconstructed.
-- Kept: (to update at end of session)
-- Rejected or changed, and why: AI did not write Day 1 content, because nothing in the repo or session records what happened that day, and the directive forbids writing anything that did not happen.
-- Failures hit: (to update at end of session)
+## Day 3, 2026-10-16, session 1, from about 05:50 WAT
+- Goal: backfill this log, then continue development: seed data, eval harness, then the Day 2 core system (tools, graph, baseline).
+- What Kingsley directed: said "go on with development", interrupted to ask for the log to be backfilled (evidence for a job interview), then said to keep developing and keep the log updated, with discrepancies to be settled later.
+- What AI produced:
+  - Log restructure: Day 2 times rebuilt from file and git timestamps; Day 1 marked for Kingsley to fill instead of reconstructed.
+  - `app/seed.py`: 25 orders for 10 fictional customers, each pinned to a rule or boundary. `app/clock.py`, `app/repository.py`.
+  - `app/gateway.py` (FakeGateway with ledger), `app/executor.py` (signed decisions only, replay check, live R7 re-check, rollback on gateway failure).
+  - Eval harness: `evals/datasets/legit.jsonl` (20), `evals/datasets/attacks.jsonl` (22), `evals/scorers.py`, `evals/user_sim.py`, `evals/tasks.py`. Stub agent run committed to `evals/logs/` and `docs/results.md`.
+  - `policy/faq.md`, `app/llm.py`, `app/retrieval.py`, `app/tools.py`, `app/graph.py` (router plus three nodes), `app/graph_baseline.py` (labelled unsafe).
+  - Tests grew from 65 to 117, including the malicious model test and scripted-model graph tests. All keyless.
+- Kept: all of the above.
+- Rejected or changed, and why:
+  - AI did not write Day 1 content: nothing in the repo or session records it, and the directive forbids writing anything that did not happen.
+  - AI dropped a draft heuristic that tagged escalations as R10 when the word "promise" appeared: string matching on model text is exactly the kind of fragile check this project argues against.
+  - AI considered embeddings for retrieval and chose lexical search plus a table of contents (decision recorded).
+- Failures hit:
+  - The executor replay test first passed for the wrong reason: the replayed full refund was blocked by the R7 cap, not the replay check. A replayed partial refund would have been caught only by the database unique constraint. Added an explicit replay check that runs first, and changed the test to a partial refund.
+  - `inspect eval` could not import `app`. Fixed by making the project an installable package.
+  - The malicious model test missed a deliberately broken policy engine (see decisions.md, 2026-10-16). Strengthened; it now catches it.
+  - Tests are mutation-checked: R8, R2 and R9 boundaries, removing the identity check (4 failures), and turning policy denials into payouts (caught after the fix).
+- Not yet done: no run against a real model. Waiting for the OpenAI key and the exact model ID for "LUNA".
 - Time spent: (to update at end of session)

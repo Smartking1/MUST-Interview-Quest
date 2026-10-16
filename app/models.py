@@ -80,7 +80,7 @@ class Refund(Base):
 class Escalation(Base):
     __tablename__ = "escalations"
     id: Mapped[int] = mapped_column(primary_key=True)
-    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"))
+    customer_id: Mapped[int | None] = mapped_column(ForeignKey("customers.id"))  # None if not verified
     order_id: Mapped[int | None] = mapped_column(ForeignKey("orders.id"))
     request: Mapped[str] = mapped_column(Text)
     rule_ids: Mapped[list[str]] = mapped_column(JSON)

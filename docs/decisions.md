@@ -51,3 +51,21 @@ Places where policy.md is silent or ambiguous, and how the engine reads them. Ea
 ## 2026-10-16: Project installed as a package
 - Context: `inspect eval` loads the task file in a way that could not import `app`.
 - Decision: added a hatchling build so `app` and `evals` are importable everywhere. No new runtime dependency.
+
+## 2026-10-16: Retrieval is lexical search plus a table of contents, not embeddings
+- Context: the corpus is 18 short sections. "Do you take PayPal?" shares no words with "F4 Payment methods", so pure keyword search misses it.
+- Decision: `search_policy` returns the top lexical matches and always the full table of contents; `read_policy_section(id)` opens a section. The model can navigate by title when wording differs. No embeddings, no network, no new dependency, deterministic in tests.
+
+## 2026-10-16: Router falls back to the Q&A node
+- Decision: if the router's reply is not one of `refunds`, `orders`, `qa`, the turn goes to `qa`, which has no tools that act on orders. An unparseable or manipulated route gets the least authority. Tested with a scripted model.
+
+## 2026-10-16: Identity failures are indistinguishable
+- Decision: `verify_identity` returns the same message whether the order does not exist or the email is wrong, so it cannot be used to find valid order numbers.
+
+## 2026-10-16: Baseline gets the same capabilities, enforced only by its prompt
+- Decision: the baseline has the full policy and FAQ in its system prompt, explicit instructions to verify email and follow policy, and tools that act directly (`issue_refund(order_number, amount_cents, reason)`, `cancel_order`, `update_address`, `create_return`, `lookup_order`, `escalate`). It is a fair, conventional design, not a strawman: a reviewer should recognise it from tutorials.
+- Assumption: #1. The comparison isolates one variable: where authority lives.
+
+## 2026-10-16: The malicious model test bypasses the prompt entirely
+- Decision: `tests/test_malicious_model.py` calls every tool with adversarial arguments, unverified and verified, across every seeded order. If deleting the system prompt could make the agent unsafe, this test would fail.
+- Finding while building it: the first version only verified as the owner of HM-1001. Once HM-1001 was cancelled, the executor's R7 re-check blocked every later payout, so a deliberately broken policy engine (deny turned into pay) went undetected. Added a scenario on orders where policy pays nothing (HM-1007, HM-1017), which catches it. The layered defense worked, but it hid a gap in the test.
