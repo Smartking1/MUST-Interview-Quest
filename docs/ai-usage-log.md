@@ -92,4 +92,4 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Rejected or changed, and why: AI first planned to mark any gateway exception as `failed`. Changed before committing: a timeout may have paid, so only a definite rejection marks a refund failed (decisions.md).
 - Failures hit: `paystack.com/docs` returned 403 to both the fetch tool and curl; worked around with the official spec on GitHub. One existing executor test encoded the old behaviour (roll back and retry the same decision) and failed as expected; rewritten for the new behaviour.
 - Not yet done: the real test-mode payment and refund need Kingsley's Paystack test secret key and one checkout payment with a test card.
-- Time spent: (to update at end of session)
+- Time spent: session ended about 08:31 WAT (system clock; start not recorded). **[Kingsley to confirm]**
