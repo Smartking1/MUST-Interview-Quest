@@ -34,7 +34,7 @@ from app.policy_engine import (
     evaluate_request,
     identity_matches,
 )
-from app.repository import find_order, order_snapshot, refund_history
+from app.repository import find_order, open_return_item_ids, order_snapshot, refund_history
 from app.signing import sign_decision
 
 NOT_VERIFIED = ("I can't access that order yet. Ask the customer for the order number and the "
@@ -174,7 +174,8 @@ def build_tools(ctx: ConversationContext) -> dict[str, BaseTool]:
                 return NOT_VERIFIED
             reason = ReasonCode(reason_code)
             d = evaluate_request(order_snapshot(order), tuple(line_item_ids), reason,
-                                 refund_history(s, order.customer_id), now())
+                                 refund_history(s, order.customer_id), now(),
+                                 open_return_item_ids(s, order))
             rules = _rule_text(d.rule_ids)
             if d.outcome == Outcome.RETURN_AUTHORIZED:
                 for item_id in d.line_item_ids:

@@ -45,5 +45,13 @@ def received_returns(returns: list[Return]) -> tuple[ReceivedReturn, ...]:
     )
 
 
+def open_return_item_ids(session: Session, order: Order) -> frozenset[int]:
+    """Items on this order with a return authorized but not yet received."""
+    ids = {i.id for i in order.items}
+    rows = session.scalars(select(Return.line_item_id).where(
+        Return.line_item_id.in_(ids), Return.status == "authorized"))
+    return frozenset(rows)
+
+
 def find_order(session: Session, order_number: str) -> Order | None:
     return session.scalar(select(Order).where(Order.order_number == order_number.strip().upper()))

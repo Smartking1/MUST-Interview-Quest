@@ -130,6 +130,7 @@ def run_conversation(agent_kind: str):
                 state.messages.append(ChatMessageAssistant(content=reply))
                 actions += [m.text for m in getattr(agent, "messages", [])[seen:] if m.type == "tool"]
             state.store.set("actions", actions)
+            state.store.set("guard_events", list(getattr(agent, "guard_events", [])))
 
             state.store.set("observed", observe(sessions, before))
             state.store.set("forbidden_tokens", forbidden_tokens(sessions, md["may_reveal_orders"]))

@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.attachments import save_upload
 from app.executor import Executor
 from app.llm import chat_model
+from app import reply_guard
 from app.tools import NODE_TOOLS, build_tools, make_context
 
 ROUTES = ("refunds", "orders", "qa")
@@ -60,8 +61,10 @@ def _conversation_text(messages: list[AnyMessage], last: int = 6) -> str:
                      for m in turns[-last:])
 
 
-def build_graph(model: BaseChatModel, tools: dict[str, BaseTool]):
+def build_graph(model: BaseChatModel, tools: dict[str, BaseTool], events: list | None = None):
+    """events collects reply guard interventions, for logs and evals."""
     graph = StateGraph(State)
+    events = events if events is not None else []
 
     async def router(state: State) -> dict:
         reply = await model.ainvoke([SystemMessage(ROUTER_PROMPT),
@@ -83,9 +86,28 @@ def build_graph(model: BaseChatModel, tools: dict[str, BaseTool]):
 
         graph.add_node(node, agent)
         graph.add_node(f"{node}_tools", ToolNode(node_tools))
-        graph.add_conditional_edges(node, tools_condition, {"tools": f"{node}_tools", END: END})
+        graph.add_conditional_edges(node, tools_condition, {"tools": f"{node}_tools", END: "guard"})
         graph.add_edge(f"{node}_tools", node)
 
+    async def guard(state: State) -> dict:
+        """Code decides whether the reply over-promises; see app/reply_guard.py."""
+        messages = state["messages"]
+        last_human = max(i for i, m in enumerate(messages) if isinstance(m, HumanMessage))
+        tool_results = [m.text for m in messages[last_human:] if m.type == "tool"]
+        reply = messages[-1]
+        found = reply_guard.violations(reply.text, tool_results)
+        if not found:
+            return {}
+        events.append({"stage": "rewrite", "violations": found})
+        rewritten = await model.ainvoke(
+            [SystemMessage(BASE_PROMPT)] + messages + [SystemMessage(reply_guard.rewrite_instruction(found))])
+        if not reply_guard.violations(rewritten.text, tool_results):
+            return {"messages": [AIMessage(content=rewritten.text, id=reply.id)]}
+        events.append({"stage": "fallback", "violations": reply_guard.violations(rewritten.text, tool_results)})
+        return {"messages": [AIMessage(content=reply_guard.fallback_reply(tool_results), id=reply.id)]}
+
+    graph.add_node("guard", guard)
+    graph.add_edge("guard", END)
     return graph.compile()
 
 
@@ -95,7 +117,8 @@ class TrustedAgent:
     def __init__(self, sessions: sessionmaker[Session], model: BaseChatModel | None = None,
                  executor: Executor | None = None):
         self.ctx = make_context(sessions, executor)
-        self.graph = build_graph(model or chat_model(), build_tools(self.ctx))
+        self.guard_events: list[dict] = []
+        self.graph = build_graph(model or chat_model(), build_tools(self.ctx), self.guard_events)
         self.messages: list[AnyMessage] = []
 
     async def respond(self, message: str, image: tuple[str, str] | None = None) -> str:

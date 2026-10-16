@@ -253,12 +253,15 @@ def evaluate_request(
     reason: ReasonCode,
     history: tuple[RefundRecord, ...],
     now: datetime,
+    open_return_item_ids: frozenset[int] = frozenset(),
 ) -> Decision:
     """Evaluate a customer's refund or return request on delivered items.
 
     RETURN never pays out here: it authorizes the return, and the refund is
     decided by evaluate_received_returns using the condition the warehouse
     records. DEFECTIVE and DAMAGED_IN_DELIVERY always escalate when in window.
+    An item with a return already authorized and not yet received is not
+    authorized again (open_return_item_ids).
     """
     if reason == ReasonCode.CANCEL_UNSHIPPED:
         return evaluate_cancellation(order, history, now)
@@ -288,6 +291,10 @@ def evaluate_request(
         elif item.final_sale:
             outcomes.append(ItemOutcome(item_id, Outcome.DENY, ("R6",),
                                         reason="Final sale items are not refundable."))
+        elif reason == ReasonCode.RETURN and item_id in open_return_item_ids:
+            outcomes.append(ItemOutcome(item_id, Outcome.DENY, ("F7",),
+                                        reason="A return is already authorized for this item; "
+                                               "the refund is decided when it arrives."))
         elif reason == ReasonCode.RETURN:
             if days <= UNOPENED_WINDOW_DAYS:
                 outcomes.append(ItemOutcome(item_id, Outcome.RETURN_AUTHORIZED, ("R2", "R3")))

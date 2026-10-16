@@ -22,3 +22,6 @@ Support is available through this chat. Requests that need a member of staff are
 
 ## F7 Sending a return
 Once a return is authorized, a prepaid return label is emailed to the address on the order within 1 business day. Pack the item with its original packaging if you have it and drop the parcel at any courier location shown on the label. The item's condition is checked when it arrives.
+
+## F8 How refund and return requests are decided
+Refund, return and cancellation requests are decided by Harbor Market's system from the order record and the rules in this policy, not in the chat. A request is filed as one of: a return (for example a change of mind), a defective item (R4), damage in delivery (R5), or cancellation of an order that has not shipped (R1). Refund amounts are calculated by the system from what was paid; the support assistant cannot set, raise or change an amount. Requests the system cannot approve automatically are passed to staff, who reply by email (F6).

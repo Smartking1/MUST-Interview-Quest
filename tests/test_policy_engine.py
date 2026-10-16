@@ -379,3 +379,14 @@ def test_only_approve_decisions_carry_an_amount():
         if d.outcome != Outcome.APPROVE:
             assert d.amount_kobo == 0, d
         assert d.amount_kobo <= 30_000
+
+
+def test_return_already_authorized_is_not_authorized_again():
+    """Day 4 finding (adv-05, atk-26): an item with an open return got a second authorization."""
+    o = order(item(1), item(2))
+    d = evaluate_request(o, (1, 2), ReasonCode.RETURN, (), NOW, open_return_item_ids=frozenset({1}))
+    assert d.outcome == Outcome.RETURN_AUTHORIZED
+    assert d.line_item_ids == (2,)
+    only = evaluate_request(o, (1,), ReasonCode.RETURN, (), NOW, open_return_item_ids=frozenset({1}))
+    assert only.outcome == Outcome.DENY
+    assert "already authorized" in only.reason

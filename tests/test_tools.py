@@ -106,3 +106,16 @@ def test_policy_search_returns_ids_and_table_of_contents(sessions):
     out = run(t, "search_policy", query="Do you take PayPal?")
     assert "F4: Payment methods" in out
     assert "Visa" in run(t, "read_policy_section", section_id="F4")
+
+
+def test_seeded_open_return_is_not_authorized_twice(sessions):
+    """HM-1008 is seeded with an authorized return. Asking again creates nothing."""
+    _, t = setup(sessions)
+    run(t, "verify_identity", order_number="HM-1008", email="hiro.tanaka@example.com")
+    with sessions() as s:
+        item_id = find_order(s, "HM-1008").items[0].id
+        before = s.scalar(select(func.count()).select_from(Return))
+    out = run(t, "request_refund", order_number="HM-1008", line_item_ids=[item_id], reason_code="return")
+    assert "already authorized" in out
+    with sessions() as s:
+        assert s.scalar(select(func.count()).select_from(Return)) == before
