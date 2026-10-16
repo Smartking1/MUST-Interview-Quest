@@ -9,12 +9,12 @@ Two-phase, because not every gateway is idempotent (Paystack refunds take no
 idempotency key):
 1. Claim the decision: commit a `pending` refund row. The unique decision_id
    makes a second claim fail before any money can move.
-2. Call the gateway, then mark the row `succeeded`, or `failed` only when the
+2. Call the gateway, then mark the row `accepted`, or `failed` only when the
    gateway definitely rejected it. A timeout or server error leaves it `pending`.
 If the process dies between the gateway call and step 2, the row stays
 `pending` and counts against R7. It is never retried automatically: a human
 reconciles it using the decision_id, which is sent to the gateway as a note.
-Pending and succeeded refunds both count toward every limit; failed ones do not.
+Pending and accepted refunds both count toward every limit; failed ones do not.
 """
 
 from __future__ import annotations
@@ -76,7 +76,7 @@ class Executor:
                 session.rollback()
                 raise  # outcome unknown: the refund stays pending for a human to reconcile
             session.commit()  # the gateway's ledger entry
-        self._finish(refund_id, "succeeded", result.gateway_ref, cancel="R1" in payload.rule_ids)
+        self._finish(refund_id, "accepted", result.gateway_ref, cancel="R1" in payload.rule_ids)
         return ExecutionResult(payload.decision_id, payload.order_id, payload.amount_kobo, result.gateway_ref)
 
     def _claim(self, p: SignedPayload) -> tuple[int, str | None]:

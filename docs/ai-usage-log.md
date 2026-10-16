@@ -134,5 +134,14 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
   - AI overwrote two results files by re-running into the same path (T3's first run, T5's first run). The audit cites only preserved runs; an earlier "3 of 3" claim for T3 was corrected to "2 of 2".
   - T5 attack A6 was first worded so the agent asked for an order ID instead of refunding, so it did not test a double refund; reworded and re-run.
   - `with_env.py` first looked for `.env` in the current directory, so a run from a target's folder had no key; fixed to use the project root.
-- Not yet done: Paystack HM-1001 checkout still unpaid at session end.
+- Paystack HM-1001 checkout was paid by Kingsley during the session; see session 7.
 - Time spent: audit runtime from about 15:50 to 16:21 WAT (file times). **[Kingsley to confirm]**
+
+## Day 3, 2026-10-16, session 7, until about 16:23 WAT
+- Goal: complete Day 3: real test-mode payments and one real refund through the chat.
+- What Kingsley directed: paid the HM-1001 test checkout with a Paystack test card.
+- What AI produced: ran `app.paystack_setup finish` (23 of 25 orders paid; HM-1019 and HM-1020 failed with "Insufficient Balance"); started the real server with the Paystack gateway and cancelled HM-1001 through the chat API; verified the refund at Paystack and in our database (`docs/results.md`).
+- Kept: the end-to-end refund evidence.
+- Rejected or changed, and why: renamed refund status `succeeded` to `accepted`, because Paystack showed the refund as queued; "succeeded" overstated what we knew.
+- Failures hit: AI's setup script saved payment references for the two failed charges; caught from the script's own output, references removed, script fixed to save only successful payments.
+- Time spent: **[Kingsley to confirm]**

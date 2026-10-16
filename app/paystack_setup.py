@@ -83,6 +83,7 @@ def finish(reference: str) -> None:
             sys.exit("That card authorization is not reusable; pay with a different test card.")
         refs[FIRST_ORDER] = reference
         print(f"{FIRST_ORDER}: {reference} (checkout)")
+        failed: list[str] = []
 
         for spec in ORDERS:
             if spec.number in refs:
@@ -93,12 +94,17 @@ def finish(reference: str) -> None:
                 "authorization_code": auth["authorization_code"], "reference": ref,
                 "metadata": {"order_number": spec.number},
             })
-            refs[spec.number] = charged["reference"]
             print(f"{spec.number}: {charged['reference']} ({charged['status']})")
+            if charged["status"] != "success":
+                failed.append(spec.number)
+                continue  # no payment, so nothing to refund: the gateway will reject refunds on this order
+            refs[spec.number] = charged["reference"]
             for kobo, _, _ in spec.prior_refunds:  # keep Paystack consistent with seeded refund history
                 call(http, "POST", "/refund", json={"transaction": charged["reference"], "amount": kobo,
                                                     "merchant_note": "seeded prior refund"})
         payment_refs.save(refs)
+    if failed:
+        print(f"Not paid (no reference saved): {', '.join(failed)}. Re-run finish to retry them.")
     with Session(make_engine()) as s:
         print(f"Saved {len(refs)} references; applied to {payment_refs.apply_saved(s)} orders in the database.")
 

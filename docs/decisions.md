@@ -117,3 +117,10 @@ Places where policy.md is silent or ambiguous, and how the engine reads them. Ea
 ## 2026-10-16: OpenAI Responses API for every model call
 - Context: `gpt-5.6-luna` rejects function tools with reasoning on Chat Completions.
 - Decision: `ChatOpenAI(use_responses_api=True)` in `app/llm.py`, shared by Trusted, baseline and photo descriptions, so the comparison stays like for like. `LLM_MODEL` may be given as `openai/<id>` (Inspect style) or bare.
+
+## 2026-10-16: Refund status `succeeded` renamed to `accepted`
+- Context: the first real Paystack refund showed `pending` at Paystack (queued) while our row said `succeeded`. Our status only ever meant that the gateway accepted the request.
+- Decision: statuses are `pending` (claimed, outcome unknown), `accepted` (gateway accepted it) and `failed` (gateway definitely rejected it). Settlement is Paystack's state, visible in its dashboard.
+
+## 2026-10-16: Two seeded orders have no Paystack payment
+- HM-1019 (₦600,000) and HM-1020 (₦1,299,000) could not be charged in test mode: Paystack returned "Insufficient Balance" for the test card. Both are cases above the ₦300,000 limit that escalate to a human. A human approval on them would be rejected by Paystack and recorded as `failed` by the executor. The setup script originally saved references for these failed charges; fixed to save only successful payments.

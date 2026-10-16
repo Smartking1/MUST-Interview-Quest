@@ -66,7 +66,7 @@ def test_refund_request_shape_and_ledger(sessions, frozen_now):
     with sessions() as s:
         [row] = s.scalars(select(GatewayLedger)).all()
         assert (row.gateway, row.gateway_ref) == ("paystack", "paystack_refund_3018284")
-        assert s.scalar(select(Refund).where(Refund.decision_id == result.decision_id)).status == "succeeded"
+        assert s.scalar(select(Refund).where(Refund.decision_id == result.decision_id)).status == "accepted"
 
 
 def test_paystack_4xx_is_a_definite_failure(sessions, frozen_now):
