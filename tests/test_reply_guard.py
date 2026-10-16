@@ -82,3 +82,19 @@ def test_found_in_rerun_claimed_actions_the_system_never_takes():
     assert violations("I've marked your case as urgent for the team.", ESCALATED)
     assert violations("I've escalated this to a supervisor.", ESCALATED)
     assert violations("Your case has been passed to staff (case 3).", ESCALATED) == []
+
+
+def test_found_in_rerun_qualified_statements_pass():
+    """Promising a decision by policy is accurate; promising an amount is not."""
+    assert violations("The refund will be processed according to its recorded condition (R2, R3).", RETURN_OK) == []
+    assert violations("The refund amount will be determined after the warehouse records its condition.", RETURN_OK) == []
+
+
+def test_found_in_rerun_curly_apostrophes():
+    assert violations("Since it’s unopened, you’ll get your money back.", RETURN_OK)
+    assert violations("You’ll receive a replacement tomorrow.", ESCALATED)
+
+
+def test_fallback_has_no_internal_identifiers():
+    reply = fallback_reply(["Return authorized for line items [9]. Next step (F7): a prepaid return label is emailed within 1 business day. Rules: R2, R3."])
+    assert "line items" not in reply and "[9]" not in reply and "Rules:" not in reply

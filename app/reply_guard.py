@@ -27,17 +27,23 @@ PROMISES = [
     (re.compile(r"\bguarantee", re.I), "guarantees an outcome"),
     (re.compile(r"\b(full refund|no restocking fee|without (a|any) (fee|restocking))", re.I),
      "states the refund amount or fee before the system has decided it"),
-    (re.compile(r"\b(you('ll| will)|you are going to|we('ll| will))\b[^.]*\b(refund|reimburs|replac|money back|credit)", re.I),
+    (re.compile(r"\b(you([’']ll| will)|you are going to|we([’']ll| will))\b[^.]*\b(refund|reimburs|replac|money back|credit)", re.I),
      "promises a future refund, replacement or credit"),
-    (re.compile(r"\b(will|'ll)\s+(be\s+)?(issue|process|send|pay|approv)\w*\s+(the|a|your)?\s*(full\s+)?(refund|replacement)", re.I),
+    (re.compile(r"\b(will|[’']ll)\s+(be\s+)?(issue|process|send|pay|approv)\w*\s+(the|a|your)?\s*(full\s+)?(refund|replacement)", re.I),
      "promises a future refund, replacement or credit"),
-    (re.compile(r"\brefund\b[^.]*\b(will|'ll)\s+be\s+(issued|processed|paid|sent|approved|made)", re.I),
+    (re.compile(r"\brefund\b[^.]*\b(will|[’']ll)\s+be\s+(issued|processed|paid|sent|approved|made)", re.I),
      "promises a future refund"),
     (re.compile(r"\b(marked|flagged|prioriti[sz]ed)\b[^.]*\b(urgent|priority|expedit)|\b(supervisor|manager|senior (agent|staff))", re.I),
      "claims an action the system did not take (cases are only passed to staff)"),
-    (re.compile(r"\bsince (it'?s|it is|the item is|they'?re)\s+(unopened|sealed|unused|new|undamaged|with tags)", re.I),
+    (re.compile(r"\bsince (it[’']?s|it is|the item is|they[’']?re)\s+(a\s+\w+\s+item\s+)?(unopened|sealed|unused|new|undamaged|with (the )?tags)", re.I),
      "treats the customer's description of the item as established"),
 ]
+
+
+# Patterns about amounts and future refunds pass when the sentence ties the outcome to the system's decision
+QUALIFIED = re.compile(r"\b(depending on|depends on|according to|based on|determined|decided|recorded condition)\b", re.I)
+QUALIFIABLE = {"states the refund amount or fee before the system has decided it", "promises a future refund",
+               "promises a future refund, replacement or credit"}
 
 
 def sentences(text: str) -> list[str]:
@@ -57,7 +63,7 @@ def violations(reply: str, tool_results: list[str]) -> list[str]:
         if NEGATIONS.search(sentence):
             continue
         for pattern, why in PROMISES:
-            if pattern.search(sentence):
+            if pattern.search(sentence) and not (why in QUALIFIABLE and QUALIFIED.search(sentence)):
                 found.append(f'"{sentence}" {why}')
                 break
     return found
@@ -72,5 +78,7 @@ def rewrite_instruction(found: list[str]) -> str:
 def fallback_reply(tool_results: list[str]) -> str:
     """Built only from tool results, which code wrote."""
     decided = [r for r in tool_results if any(m in r for m in DECISION_MARKERS)]
-    body = " ".join(decided[-2:]) if decided else "Your request has been recorded."
+    body = " ".join(decided[-1:]) if decided else "Your request has been recorded."
+    body = re.sub(r"\s*for line items \[[\d, ]*\]", "", body)
+    body = re.sub(r"\s*Rules: [^.]*\.", "", body).strip()
     return f"Here is what our system recorded: {body} If you have questions, I can pass them to our staff."
