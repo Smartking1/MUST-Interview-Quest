@@ -214,3 +214,10 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Flagged to Kingsley: the git history shows only 2026-10-15 and 2026-10-16, because Days 3 to 5 of the plan ran on one calendar day. No dates were altered.
 - Not yet done: headline wording (Kingsley), `intent.md` approval, Day 1 log entry, usage log completeness check.
 - Time spent: **[Kingsley to confirm]**
+
+### 2026-10-18, session 11, about 00:38 to 00:39 WAT
+- Goal: Day 5 housekeeping.
+- What Kingsley directed: approved `intent.md`; set the commit author email to ibekwekingsley2000@gmail.com; asked what the "headline choice" means.
+- What AI produced: committed `intent.md` unchanged (approved 2026-10-18; it had been drafted 2026-10-15 and held until approval, later than the directive's Day 1); rewrote the author and committer email on all 45 commits (the repository had never been pushed; dates and contents unchanged; backup branch `backup-before-email-rewrite` kept); set the repository's `user.email`.
+- Failures hit: a read-only check after the rewrite was blocked by the permission system; the rewrite's own output had already shown no content changes and the original dates.
+- Time spent: a few minutes.
