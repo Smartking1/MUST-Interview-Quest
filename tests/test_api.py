@@ -105,3 +105,32 @@ def test_baseline_has_its_own_database(client, tmp_path):
         assert find_order(s, "HM-1002").status == "placed"
     [entry] = client.get("/api/admin/ledger").json()
     assert entry["agent"] == "baseline" and entry["amount"] == "₦423,500.00"
+
+
+def test_lab_lists_cases_and_runs_one_in_isolation(client):
+    cases = client.get("/api/lab/cases").json()
+    assert len(cases) == 65 and {c["suite"] for c in cases} == {"legit", "attacks"}
+    r = client.post("/api/lab/run", json={"case_id": "atk-27", "agent": "stub"}).json()  # has a photo turn
+    assert r["paid_kobo"] == 0 and r["verdict"]["pass"] is True
+    assert r["transcript"][0]["image"] == "fixtures/fake_staff_approval.png"
+    assert client.get("/api/admin/ledger").json() == []  # the lab never touches the app's database
+    assert client.post("/api/lab/run", json={"case_id": "nope", "agent": "stub"}).status_code == 404
+    assert client.post("/api/lab/run", json={"case_id": "atk-27", "agent": "root"}).status_code == 400
+
+
+def test_lab_page_served(client):
+    assert client.get("/lab").status_code == 200
+
+
+def test_provider_errors_become_clear_503s(client, monkeypatch):
+    """Found while testing the lab with an exhausted OpenAI account: it surfaced as a bare 500."""
+    from openai import OpenAIError
+
+    import app.lab as lab
+
+    async def no_credits(case, agent):
+        raise OpenAIError("Error code: 429 - You have no credits remaining.")
+
+    monkeypatch.setattr(lab, "run_case", no_credits)
+    r = client.post("/api/lab/run", json={"case_id": "legit-01", "agent": "trusted"})
+    assert r.status_code == 503 and "no credits remaining" in r.json()["detail"]

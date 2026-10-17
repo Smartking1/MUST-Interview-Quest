@@ -1,6 +1,6 @@
 """FastAPI app: customer chat, staff admin, static pages.
 
-Run: uv run uvicorn app.main:create_app --factory --reload
+Run: uv run --env-file .env uvicorn app.main:create_app --factory --reload
 No auth system by design (directive section 12): /admin asks for a name so
 every staff decision is attributable, and that is all.
 """
@@ -12,13 +12,14 @@ import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from openai import OpenAIError
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import admin, payment_refs
+from app import admin, lab, payment_refs
 from app.attachments import AttachmentError
 from app.attachments import validate as validate_image
 from app.clock import now
@@ -48,6 +49,11 @@ class ApproveIn(BaseModel):
     amount_kobo: int | None = None
 
 
+class LabRunIn(BaseModel):
+    case_id: str
+    agent: str = "trusted"
+
+
 class DenyIn(BaseModel):
     admin: str
 
@@ -55,6 +61,13 @@ class DenyIn(BaseModel):
 class ReceiveIn(BaseModel):
     opened: bool
     tags_attached: bool = False
+
+
+def provider_error(exc: Exception) -> str:
+    """A readable message for model provider failures (no credits, rate limits), never the key."""
+    body = getattr(exc, "body", None)
+    detail = body.get("message") if isinstance(body, dict) else str(exc).split(" - ")[-1][:300]
+    return f"The model provider returned an error: {detail}"
 
 
 def baseline_url(url: str) -> str:
@@ -105,6 +118,29 @@ def create_app(db_url: str | None = None) -> FastAPI:
     def admin_page():
         return FileResponse(STATIC / "admin.html")
 
+    @app.get("/lab")
+    def lab_page():
+        return FileResponse(STATIC / "lab.html")
+
+    @app.get("/api/lab/cases")
+    def lab_cases():
+        return [{k: c.get(k) for k in ("id", "suite", "category", "turns", "expected_outcome",
+                                       "max_authorized_refund_kobo", "forbidden_effects")} for c in lab.load_cases()]
+
+    @app.post("/api/lab/run")
+    async def lab_run(body: LabRunIn):
+        case = next((c for c in lab.load_cases() if c["id"] == body.case_id), None)
+        if case is None:
+            raise HTTPException(404, "Unknown case")
+        if body.agent not in ("trusted", "baseline", "stub"):
+            raise HTTPException(400, "agent must be 'trusted' or 'baseline'")
+        try:
+            return await lab.run_case(case, body.agent)
+        except ModelNotConfigured as exc:
+            raise HTTPException(503, str(exc)) from exc
+        except OpenAIError as exc:
+            raise HTTPException(503, provider_error(exc)) from exc
+
     @app.post("/api/chat")
     async def chat(body: ChatIn):
         cid = body.conversation_id or uuid.uuid4().hex
@@ -121,7 +157,10 @@ def create_app(db_url: str | None = None) -> FastAPI:
             except AttachmentError as exc:
                 raise HTTPException(400, str(exc)) from exc
             image = (body.image_base64, body.image_mime)
-        reply = await conversations[key].respond(body.message, image)
+        try:
+            reply = await conversations[key].respond(body.message, image)
+        except OpenAIError as exc:
+            raise HTTPException(503, provider_error(exc)) from exc
         return {"conversation_id": cid, "agent": body.agent, "reply": reply}
 
     @app.get("/api/admin/escalations")

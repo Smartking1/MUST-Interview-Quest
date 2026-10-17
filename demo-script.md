@@ -7,7 +7,7 @@ Every shot below was run on 2026-10-16 against the real server, with `gpt-5.6-lu
 1. Rotate any exposed keys; put current ones in `.env` (no space after `=`), with `PAYMENT_GATEWAY=paystack`.
 2. Re-pay the demo orders (a refunded test payment cannot be refunded twice):
    `uv run python -m app.paystack_setup recharge HM-1001 HM-1002`
-3. Start the app: `uv run uvicorn app.main:create_app --factory`
+3. Start the app: `uv run --env-file .env uvicorn app.main:create_app --factory`
 4. Open three tabs: http://localhost:8000 (chat), http://localhost:8000/admin (admin, enter your name), Paystack dashboard in **Test Mode** on Transactions, then Refunds.
 5. In admin, click **Reset demo data**.
 6. Have ready: `uv run inspect view --log-dir evals/logs/final` (fallback for shot 1), and two slides: the audit finding and the results table (copy from `README.md`).

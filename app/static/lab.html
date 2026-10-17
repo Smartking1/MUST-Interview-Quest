@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Lab</title>
+<style>
+  :root { --bg:#f6f7f9; --panel:#fff; --ink:#1d2330; --muted:#667085; --line:#e3e6ea;
+          --ok:#1f6f4a; --bad:#b42318; --chip:#eef1f5; --user:#e8eefc; --bot:#f2f4f7; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:14px 20px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0 auto 0 0; }
+  header a { color:var(--muted); }
+  .layout { display:grid; grid-template-columns:300px 1fr; gap:16px; padding:16px 20px; }
+  aside, section.panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; }
+  aside { padding:12px; display:flex; flex-direction:column; gap:8px; max-height:calc(100vh - 100px); }
+  aside select, aside input { font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:6px; width:100%; }
+  #cases { overflow:auto; flex:1; margin:0; padding:0; list-style:none; }
+  #cases li { padding:7px 8px; border-radius:6px; cursor:pointer; display:flex; justify-content:space-between; gap:8px; }
+  #cases li:hover { background:var(--chip); }
+  #cases li.on { background:var(--ink); color:#fff; }
+  #cases small { color:inherit; opacity:.7; }
+  main { display:flex; flex-direction:column; gap:16px; min-width:0; }
+  section.panel { padding:14px; }
+  h2 { font-size:15px; margin:0 0 8px; }
+  .muted { color:var(--muted); }
+  .turn { background:var(--user); border-radius:8px; padding:8px 10px; margin:6px 0; white-space:pre-wrap; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  button { font:inherit; padding:7px 14px; border-radius:7px; border:1px solid var(--ink); background:var(--ink); color:#fff; cursor:pointer; }
+  button.secondary { background:#fff; color:var(--ink); }
+  button:disabled { opacity:.5; cursor:wait; }
+  .results { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .results.single { grid-template-columns:1fr; }
+  .card h3 { margin:0 0 8px; font-size:15px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .card.trusted h3 .name { color:var(--ok); } .card.baseline h3 .name { color:var(--bad); }
+  .badge { font-size:12px; padding:2px 8px; border-radius:999px; color:#fff; }
+  .badge.pass { background:var(--ok); } .badge.fail { background:var(--bad); }
+  .chip { display:inline-block; font-size:12px; background:var(--chip); padding:2px 8px; border-radius:999px; margin:2px 4px 2px 0; }
+  .paid { font-weight:600; } .paid.nonzero { color:var(--bad); }
+  .msg { border-radius:8px; padding:8px 10px; margin:6px 0; white-space:pre-wrap; }
+  .msg.customer { background:var(--user); } .msg.agent { background:var(--bot); }
+  .problems { color:var(--bad); margin:6px 0; padding-left:18px; }
+  details { margin-top:8px; } details pre { white-space:pre-wrap; font:12px/1.4 ui-monospace, Menlo, monospace; background:var(--bot); padding:8px; border-radius:6px; }
+  .error { color:var(--bad); }
+  @media (max-width: 800px) { .layout { grid-template-columns:1fr; } aside { max-height:none; } #cases { max-height:260px; } .results { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Test Lab</h1>
+  <span class="muted">Each run uses a fresh database and the fake gateway. No real money, no demo data touched.</span>
+  <a href="/">Chat</a>
+  <a href="/admin">Staff admin</a>
+</header>
+<div class="layout">
+  <aside>
+    <select id="suite" aria-label="Suite">
+      <option value="">All cases</option>
+      <option value="legit">Legitimate requests</option>
+      <option value="attacks">Attacks</option>
+    </select>
+    <input id="search" placeholder="Filter by id or category" aria-label="Filter">
+    <ul id="cases"></ul>
+  </aside>
+  <main>
+    <section class="panel" id="detail"><p class="muted">Pick a case on the left.</p></section>
+    <div class="results" id="results"></div>
+  </main>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+let cases = [], current = null;
+
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  Object.assign(e, attrs || {});
+  kids.flat().forEach(k => k != null && e.append(k));
+  return e;
+}
+const turnText = t => typeof t === "string" ? t : t.text;
+const turnImage = t => typeof t === "string" ? null : t.image;
+const naira = k => "₦" + (k / 100).toLocaleString("en-NG", { minimumFractionDigits: 2 });
+
+function renderList() {
+  const suite = $("suite").value, q = $("search").value.toLowerCase();
+  const list = $("cases"); list.innerHTML = "";
+  cases.filter(c => (!suite || c.suite === suite) && (!q || (c.id + " " + c.category).toLowerCase().includes(q)))
+    .forEach(c => list.append(el("li", { className: current && current.id === c.id ? "on" : "", onclick: () => select(c) },
+      el("span", { textContent: c.id }), el("small", { textContent: c.category.replaceAll("_", " ") }))));
+}
+
+function select(c) {
+  current = c; renderList(); $("results").innerHTML = "";
+  const turns = c.turns.map((t, i) => el("div", { className: "turn" },
+    `Customer turn ${i + 1}: ${turnText(t)}`, turnImage(t) ? el("div", { className: "muted", textContent: `Photo: ${turnImage(t)}` }) : null));
+  const run = (agents) => runCase(agents);
+  $("detail").innerHTML = "";
+  $("detail").append(
+    el("h2", { textContent: `${c.id} (${c.suite}, ${c.category.replaceAll("_", " ")})` }),
+    ...turns,
+    el("p", { className: "muted", textContent:
+      `Expected: ${c.expected_outcome.join(" or ")}. Allowed refund: ${naira(c.max_authorized_refund_kobo)}.` +
+      (c.forbidden_effects && c.forbidden_effects.length ? ` Must not: ${c.forbidden_effects.join(", ")}.` : "") }),
+    el("div", { className: "row" },
+      el("button", { textContent: "Run both", onclick: () => run(["trusted", "baseline"]) }),
+      el("button", { className: "secondary", textContent: "Trusted only", onclick: () => run(["trusted"]) }),
+      el("button", { className: "secondary", textContent: "Baseline only", onclick: () => run(["baseline"]) })));
+}
+
+async function runCase(agents) {
+  const box = $("results"); box.innerHTML = "";
+  box.className = "results" + (agents.length === 1 ? " single" : "");
+  document.querySelectorAll("#detail button").forEach(b => b.disabled = true);
+  await Promise.all(agents.map(async agent => {
+    const card = el("section", { className: `panel card ${agent}` },
+      el("h3", {}, el("span", { className: "name", textContent: agent === "trusted" ? "Trusted Support" : "Baseline (unsafe)" })),
+      el("p", { className: "muted", textContent: "Running the conversation..." }));
+    box.append(card);
+    try {
+      const r = await fetch("/api/lab/run", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ case_id: current.id, agent }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.detail || r.statusText);
+      renderResult(card, data);
+    } catch (e) {
+      card.lastChild.replaceWith(el("p", { className: "error", textContent: "Error: " + e.message }));
+    }
+  }));
+  document.querySelectorAll("#detail button").forEach(b => b.disabled = false);
+}
+
+function renderResult(card, d) {
+  card.querySelector("p").remove();
+  const v = d.verdict;
+  card.querySelector("h3").append(el("span", { className: "badge " + (v.pass ? "pass" : "fail"), textContent: v.pass ? "PASS" : "FAIL" }));
+  card.append(
+    el("div", {}, "Money paid: ", el("span", { className: "paid" + (d.paid_kobo ? " nonzero" : ""), textContent: d.paid })),
+    el("div", {}, "What changed: ", d.effects.length ? d.effects.map(e => el("span", { className: "chip", textContent: e.replaceAll("_", " ") }))
+                                                     : el("span", { className: "muted", textContent: "nothing" })),
+    el("div", { className: "muted", textContent: `Outcome: ${v.outcome}` }),
+    v.problems.length ? el("ul", { className: "problems" }, v.problems.map(p => el("li", { textContent: p }))) : null,
+    d.guard_events.length ? el("div", { className: "muted", textContent:
+      `Reply check stepped in ${d.guard_events.length} time(s): ${d.guard_events.map(e => e.stage).join(", ")}` }) : null,
+    ...d.transcript.map(m => el("div", { className: "msg " + m.role, textContent:
+      (m.role === "customer" ? "Customer: " : "Agent: ") + m.text + (m.image ? `\n[photo: ${m.image}]` : "") })),
+    d.escalations.length ? el("details", {}, el("summary", { textContent: `Staff case summary (${d.escalations.length})` }),
+      d.escalations.map(s => el("pre", { textContent: s }))) : null);
+}
+
+$("suite").onchange = renderList;
+$("search").oninput = renderList;
+fetch("/api/lab/cases").then(r => r.json()).then(data => { cases = data; renderList(); });
+</script>
+</body>
+</html>

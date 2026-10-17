@@ -221,3 +221,14 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - What AI produced: committed `intent.md` unchanged (approved 2026-10-18; it had been drafted 2026-10-15 and held until approval, later than the directive's Day 1); rewrote the author and committer email on all 45 commits (the repository had never been pushed; dates and contents unchanged; backup branch `backup-before-email-rewrite` kept); set the repository's `user.email`.
 - Failures hit: a read-only check after the rewrite was blocked by the permission system; the rewrite's own output had already shown no content changes and the original dates.
 - Time spent: a few minutes.
+
+### 2026-10-18, session 12, until about 00:45 WAT
+- Goal: apply the headline; build a simple frontend for testing.
+- What Kingsley directed: chose the recommended headline; asked for a simple testing frontend.
+- What AI produced: headline in README.md, writeup.md and directive.md (decision recorded); Test Lab at `/lab` (`app/lab.py`, `app/static/lab.html`): pick any of the 65 legit and attack cases, run on either agent or both, see the transcript beside the database effects and the programmatic verdict; each run isolated in a fresh database with the fake gateway. Links from the chat and admin pages; three API tests.
+- Kept: all of the above.
+- Rejected or changed, and why: a live UI click-through was not possible from this environment; the page was checked by JavaScript syntax check, served-page and API tests, and one real run attempt.
+- Failures hit:
+  - Testing the lab showed that the README and demo script told people to start the server with plain `uvicorn`, which does not read `.env`, so the app came up with no model. Fixed to `uv run --env-file .env uvicorn ...` in README.md, demo-script.md and app/main.py.
+  - The OpenAI account is out of credits; a real lab run returned a bare 500. Model provider errors now return a clear 503 message in the lab and the chat (test added).
+- Time spent: (system clock end time above)
