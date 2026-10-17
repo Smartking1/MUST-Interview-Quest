@@ -1,7 +1,5 @@
 # Trusted Support: write-up
 
-<!-- DRAFT for Kingsley's review. Headline framing follows the recommendation in docs/decisions.md (options a and b); change it if you choose otherwise. Bracketed items need your input. -->
-
 **In short:** I built a customer support AI for an online store that can process refunds without being talked into giving money away. The AI handles the conversation; tested code decides every refund, and only that code can move money. Against a conventional agent on the same model and tests, it resolved 98% of legitimate tickets (the conventional agent: 80%), made no unauthorized refunds, and told customers far fewer things the system had not decided. The conventional agent refunded ₦423,500 that its own instructions said needed a human.
 
 ## The problem

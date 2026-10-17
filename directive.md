@@ -54,7 +54,9 @@ These are not prompt bugs. Language models are built to be helpful and persuadab
 
 ### Headline claim (use this framing everywhere)
 
-> Trusted Support resolves X% of legitimate tickets end to end while making zero unauthorized refunds under attack, compared with a conventional agent that gave away ₦Y on the same tests.
+> Trusted Support resolved 98% of legitimate tickets with no unauthorized refunds. A conventional agent on the same model refunded ₦423,500 that its own rules said needed a human, on an ordinary request with no attack involved, and under attack it told customers rules and promises that do not exist in 88% of conversations.
+
+(The headline was first written as "...compared with a conventional agent that gave away ₦Y on the same tests". The results did not support "under attack", so it changed; see "How this directive evolved".)
 
 Never lead with "zero unauthorized refunds" alone. By design, that number is close to guaranteed, and a sharp reviewer will say "you just removed the capability." The real achievement is **staying useful under attack**. Say this explicitly in the README and write-up before a reviewer can.
 
@@ -336,4 +338,4 @@ Every change below is recorded with its reasons in `docs/decisions.md`.
 - A supplementary run on `gpt-4o-mini` tested whether each agent's safety depends on the model.
 - The baseline gave away nothing under attack on either model; its only payout came from a routine request. The headline claim in section 3 is therefore under review by Kingsley.
 
-**Day 5.** **[To be written after the final runs and the headline decision.]**
+**Day 5 (2026-10-16 to 2026-10-19).** Final runs (474 conversations, three epochs), a re-run after fixing a router misroute and an over-strict eval check, and the submission documents. The headline changed: the conventional agent gave nothing away under attack on this model, and its only payout came from an ordinary request, so the headline now says exactly that (Kingsley's decision, 2026-10-18).

@@ -2,7 +2,7 @@
 
 A customer support AI for an online store that can be trusted with refunds. The AI talks to customers; plain, tested code decides every refund, and only that code can move money.
 
-<!-- HEADLINE: pending Kingsley's decision (docs/decisions.md, "The headline claim needs Kingsley's decision") and the final results. -->
+> Trusted Support resolved 98% of legitimate tickets with no unauthorized refunds. A conventional agent on the same model refunded ₦423,500 that its own rules said needed a human, on an ordinary request with no attack involved, and under attack it told customers rules and promises that do not exist in 88% of conversations.
 
 ## The problem
 

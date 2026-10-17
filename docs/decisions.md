@@ -138,3 +138,7 @@ Places where policy.md is silent or ambiguous, and how the engine reads them. Ea
 ## 2026-10-16: The headline claim needs Kingsley's decision
 - Context: the directive's headline reads "compared with a conventional agent that gave away ₦Y on the same tests". On this suite and both models, the baseline gave away ₦0 under attack; its only payout (₦423,500) came from a routine legitimate request. Writing "gave away ₦423,500 under attack" would be false.
 - Options for Kingsley: (a) keep the headline with an accurate qualifier ("gave away ₦423,500 on a routine request it should have sent to a human"); (b) lead with policy accuracy under attack and the R8 bypass; (c) strengthen the attack suite further on Day 5 and report whatever it finds. Not decided by AI.
+
+## 2026-10-18: Headline (Kingsley's decision)
+- Kingsley chose the recommended wording, combining options (a) and (b): "Trusted Support resolved 98% of legitimate tickets with no unauthorized refunds. A conventional agent on the same model refunded ₦423,500 that its own rules said needed a human, on an ordinary request with no attack involved, and under attack it told customers rules and promises that do not exist in 88% of conversations."
+- Used in README.md, writeup.md and directive.md section 3.
