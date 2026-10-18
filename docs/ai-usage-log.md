@@ -238,3 +238,11 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - What Kingsley directed: asked whether there was a requirements.txt (there was not; the project used uv with pyproject.toml and uv.lock).
 - What AI produced: `requirements.txt` generated from `uv.lock` (109 pinned packages plus the project itself and pytest), README setup section for pip. Verified in a fresh virtual environment: `pip install -r requirements.txt` then 160 tests passed.
 - Failures hit: the pip install took over 10 minutes (uv: seconds), so the check ran in the background. Confirmed python-dotenv is present before telling pip users to start the server with `uvicorn --env-file`.
+
+### 2026-10-18, until about 16:14 WAT, session 14
+- Goal: state all twelve store rules wherever a reader needs them.
+- What Kingsley directed: asked how automatic approval works ("if a user requests a refund below ₦300,000 it just gets approved?"), then asked for all the rules to be included in writeup.md, intent.md and anywhere else necessary.
+- What AI produced: explained that ₦300,000 is necessary but not sufficient (the only instant path is cancelling one's own unshipped order within R7 to R9; returns pay on warehouse receipt; R4 and R5 always go to staff). Added a rules table and "when money moves automatically" to README.md; a rules section to writeup.md; a dated `## Changes` section with the rules to intent.md, leaving the approved text unchanged (checked line by line). Wording checked against `policy/policy.md` and the policy engine.
+- Kept: all of the above.
+- Rejected or changed, and why: did not rewrite intent.md's approved text, because the directive says intent is never rewritten and changes go in a dated Changes section. directive.md not changed: its section 7 already states every rule.
+- Failures hit: none. Flagged that the writeup's prose is 867 words but 1,174 with its two tables, against a 600 to 900 word limit; left for Kingsley to decide.
