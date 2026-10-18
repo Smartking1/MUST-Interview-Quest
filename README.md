@@ -43,6 +43,40 @@ The store's policy (`policy/policy.md`) has twelve rules. Every one is enforced 
 
 **When money moves automatically.** The customer never names an amount: the refund tool has none, and the engine calculates it from the order record. The only refund a chat can trigger immediately is cancelling the customer's own unshipped order of ₦300,000 or less, with fewer than two refunds in the last 90 days. Returns are paid only after the warehouse receives them and records their condition. Everything else is denied or waits for a person in `/admin`, and a person can approve above ₦300,000 but never above the amount paid.
 
+## Trusted Support compared with a conventional agent
+
+Both agents use the same model, see the same store policy, and can do the same things: answer questions, look up orders, cancel, change addresses, start returns and refund. The difference is where decisions are made. The baseline's AI reads the rules in its prompt and decides, and its tools carry out whatever it decides. Trusted Support's AI only asks; plain code decides, and only that code can move money.
+
+| | Conventional agent (baseline) | Trusted Support |
+|---|---|---|
+| Who decides a refund | The model, following rules written in its prompt | The policy engine: plain, unit-tested code (`app/policy_engine.py`) |
+| Refund amount | Chosen by the model: `issue_refund(order_number, amount_kobo, reason)` | Computed from the order record; the model's tool has no amount field: `request_refund(order_number, line_item_ids, reason_code)` |
+| Path to the payment gateway | The model's refund tool calls it directly | None for the model. A signed decision goes to the executor, the only code holding the gateway, which checks the signature, single use and the amount cap again |
+| Identity (R11) | An instruction to check the email | Server-side state set by `verify_identity`, checked in code by every order tool |
+| Limits (R7 to R9) | Instructions the model may or may not follow | Enforced in code; the ₦300,000 limit counts every refund on the order, so split claims still escalate |
+| Returns (R2, R3) | Can refund on the customer's word ("it's unopened") | Only authorizes the return; the refund is computed when the warehouse records the condition |
+| Claimed promises (R10) | Weighed by the model | Never evidence |
+| Photos | Shown to the model | Never shown to the model; staff get the photo and a description that quotes any text in it |
+| Replies after a decision | Free text | Checked in code (`app/reply_guard.py`); over-promises get one rewrite, then a template built from what the system recorded |
+| Human approval | A free-text escalation | A staff case; approval is signed by a named person and goes through the same executor |
+| If the model is fooled | It can pay any amount to anyone | It can only ask; the code refuses |
+
+```
+Conventional agent:
+customer ─► AI (rules in its prompt) ─► issue_refund(amount the AI chose) ─► payment gateway
+
+Trusted Support:
+customer ─► AI ─► request_refund(no amount) ─► policy engine (code decides and computes the amount)
+                                                     │
+                                       approve / deny / send to a human
+                                                     │
+                                       signed decision ─► executor ─► payment gateway
+                                       (only this code holds the gateway; checks the signature,
+                                        single use, and never more than was paid)
+```
+
+When the model behaves, both agents usually reach the same answer. They differ when it does not: for the conventional agent a wrong decision is a payment (it refunded ₦423,500 on an ordinary request in about half its runs); for Trusted Support a wrong decision is only a request, and the code turns it down. The conventional agent is only as safe as its model on that conversation; Trusted Support's guarantees do not depend on the model. The conventional agent (`app/graph_baseline.py`) is labelled unsafe and exists only for comparison: it is how most tutorials build support agents, not a deliberately weak one.
+
 ## Results
 
 Final runs: both agents on the same model (`gpt-5.6-luna`), every suite three times, 474 conversations (`docs/results.md`, logs in `evals/logs/final/`).

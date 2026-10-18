@@ -2,6 +2,10 @@
 
 Every shot below was run on 2026-10-16 against the real server, with `gpt-5.6-luna` and Paystack test mode. "Tested" notes say what happened. Two shots depend on the model's behaviour on the day; they say so and give a fallback.
 
+## The one point the demo makes
+
+Both agents use the same model and policy and can do the same things. The conventional agent's AI decides, and its refund tool takes any amount it names. Trusted Support's AI only asks: code decides, and the AI's tool has no amount and no path to the payment gateway. Today's model usually behaves, so most single chats look the same; the difference is what happens when it does not. Full comparison: `README.md`, "Trusted Support compared with a conventional agent".
+
 ## Before recording (10 minutes)
 
 1. Rotate any exposed keys; put current ones in `.env` (no space after `=`), with `PAYMENT_GATEWAY=paystack`.

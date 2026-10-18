@@ -29,9 +29,23 @@ Harbor Market, a fictional Nigerian marketplace, has twelve rules (`policy/polic
 
 The customer never names an amount. The only refund a chat can trigger immediately is cancelling one's own unshipped order of ₦300,000 or less; returns pay only after the warehouse receives them, and everything else waits for a person.
 
+## How it differs from a conventional agent
+
+Both agents use the same model, policy and capabilities. The difference is who decides:
+
+| | Conventional agent | Trusted Support |
+|---|---|---|
+| Refund amount | Chosen by the model | Computed by code; the model's tool has no amount field |
+| Path to the payment gateway | The model's refund tool | Only a signed decision, through one executor |
+| Rules, limits, identity | Instructions in the prompt | Enforced in code |
+| Photos | Seen by the model | Never seen by the model; sent to staff |
+| If the model is fooled | It can pay any amount | It can only ask; code refuses |
+
+When the model behaves, both usually agree. When it does not, the conventional agent's mistake is a payment; Trusted Support's is a request the code turns down.
+
 ## What I unlearned
 
-**"Safety lives in the system prompt."** Authority now lives in code. The model never supplies an amount; a pure policy engine computes it and signs the decision, and only a separate executor can call the payment gateway. A test drives every tool as a fully compromised model would, and money still follows policy. My own baseline supplied the evidence: "refunds over ₦300,000 need a human" was in its instructions, and on an ordinary cancellation it refunded ₦423,500 anyway.
+**"Safety lives in the system prompt."** Authority now lives in code, as the table above shows. A test drives every tool as a fully compromised model would, and money still follows policy. My own baseline supplied the evidence: "refunds over ₦300,000 need a human" was in its instructions, and on an ordinary cancellation it refunded ₦423,500 anyway.
 
 **"Build first, evaluate after."** The attack suite came before the agents, and every new attack set was committed before it ran. The first real run showed my measuring was wrong: the judge could not see what the agent did, and the scorer let an unnecessary escalation pass. I fixed both by making the eval stricter.
 

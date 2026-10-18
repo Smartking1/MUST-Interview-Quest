@@ -254,3 +254,11 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Kept: all of the above.
 - Rejected or changed, and why: AI's earlier design sent every message to both agents; Kingsley's point showed that only the opening message can fairly be shared.
 - Failures hit: none found; a live browser check was not possible here, so the page was checked by JavaScript syntax check and the full test suite (160 passed).
+
+### 2026-10-18, until about 17:10 WAT, session 16
+- Goal: state the difference between Trusted Support and the conventional baseline clearly in every document.
+- What Kingsley directed: make sure the architectural differences are stated clearly in all documents.
+- What AI produced: one comparison (same model, policy and capabilities; who decides, refund amount, path to the gateway, identity, limits, returns, claimed promises, photos, replies, human approval, and what happens if the model is fooled), checked against the tool signatures in the code. Full table and money-path diagram in README.md; the table in directive.md after section 8; a compact table in writeup.md; a dated Changes section in intent.md (approved text unchanged); the key on-camera point in demo-script.md.
+- Kept: all of the above.
+- Rejected or changed, and why: the writeup went to 916 words of prose; a sentence in "What I unlearned" that the new table made redundant was cut, bringing it to 895.
+- Failures hit: none.
