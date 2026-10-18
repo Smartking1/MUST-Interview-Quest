@@ -232,3 +232,9 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
   - Testing the lab showed that the README and demo script told people to start the server with plain `uvicorn`, which does not read `.env`, so the app came up with no model. Fixed to `uv run --env-file .env uvicorn ...` in README.md, demo-script.md and app/main.py.
   - The OpenAI account is out of credits; a real lab run returned a bare 500. Model provider errors now return a clear 503 message in the lab and the chat (test added).
 - Time spent: (system clock end time above)
+
+### 2026-10-18, session 13, until about 01:16 WAT
+- Goal: a `requirements.txt` for reviewers who use pip.
+- What Kingsley directed: asked whether there was a requirements.txt (there was not; the project used uv with pyproject.toml and uv.lock).
+- What AI produced: `requirements.txt` generated from `uv.lock` (109 pinned packages plus the project itself and pytest), README setup section for pip. Verified in a fresh virtual environment: `pip install -r requirements.txt` then 160 tests passed.
+- Failures hit: the pip install took over 10 minutes (uv: seconds), so the check ran in the background. Confirmed python-dotenv is present before telling pip users to start the server with `uvicorn --env-file`.

@@ -55,8 +55,18 @@ Needs Python 3.11 or later and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync
-uv run pytest                      # 155 tests, no API keys needed
+uv run pytest                      # 160 tests, no API keys needed
 ```
+
+Without uv, using pip (slower; same pinned versions):
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt    # includes the project itself and pytest
+pytest
+```
+
+`requirements.txt` is generated from `uv.lock` (`uv export --format requirements-txt --no-hashes --group dev -o requirements.txt`); regenerate it after changing dependencies rather than editing it by hand. With pip, start the server with `uvicorn app.main:create_app --factory --env-file .env`.
 
 ### Chat and admin
 
