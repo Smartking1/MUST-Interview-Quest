@@ -85,7 +85,7 @@ Whenever a decision reflects one of these shifts, or you catch the build driftin
 - LLM provider configurable via env (`LLM_PROVIDER`, `LLM_MODEL`, `JUDGE_MODEL`, `ATTACKER_MODEL`), all model creation in `app/llm.py`
 - Payment gateway behind an interface (section 8). Paystack test mode (Stripe was the original target but is not available in Nigeria; see `docs/decisions.md`). The store prices in Nigerian naira; all money is integer kobo.
 - SQLite via SQLAlchemy
-- FastAPI backend, one static HTML/JS chat page, a minimal `/admin` page
+- FastAPI backend, static HTML/JS pages: chat (with a side by side mode), `/admin`, and a `/lab` page that replays eval cases
 - UK AISI Inspect (`inspect_ai`) for evals
 - pytest
 
@@ -95,7 +95,7 @@ No other dependencies without a note in `docs/decisions.md`.
 
 ```
 app/
-  main.py             # FastAPI: /chat, /admin, static
+  main.py             # FastAPI: chat, /admin, /lab, static
   llm.py
   graph.py            # Trusted Support graph (router + qa, orders, refunds nodes)
   graph_baseline.py   # conventional agent for comparison; labelled UNSAFE
@@ -110,10 +110,12 @@ app/
   admin.py            # staff approve/deny, warehouse receipt of returns
   attachments.py      # customer photos: to staff only, never to the chat model
   repository.py, clock.py, agent_api.py
-  paystack_setup.py, payment_refs.py   # one-time test-mode payments for seeded orders
+  paystack_setup.py, payment_refs.py   # test-mode payments for seeded orders; recharge before demo takes
+  lab.py              # Test Lab: run one eval case in an isolated database
   db.py, models.py, seed.py
   static/index.html   # chat UI: Trusted, Baseline, Side by side; photo upload
   static/admin.html   # escalation queue, returns, payment ledger
+  static/lab.html     # Test Lab page
 policy/
   policy.md           # rules with section IDs
   faq.md              # shipping, sellers, payment methods, contact
@@ -129,6 +131,7 @@ tests/
 docs/
   audit.md, decisions.md, failures.md, results.md, ai-usage-log.md
 intent.md, directive.md, writeup.md, demo-script.md, README.md
+pyproject.toml, uv.lock, requirements.txt (generated from uv.lock for pip users)
 ```
 
 ## 7. Store policy (encode exactly; do not embellish)
@@ -252,6 +255,8 @@ Final eval runs, results table, README, `demo-script.md`, `directive.md`, `write
 - **Secrets:** keys live only in `.env` (gitignored). Never `source` it in a shell; load it with a parser (`audit/harness/with_env.py`) or `uv run --env-file .env`. Never print a key.
 - **Evidence:** every eval or audit run writes to a new path. Cite only results whose files exist. Recount before writing a number down.
 - **Tests first for fixes:** a fix to a failure found by an eval gets a test that fails before the fix.
+- **Start the server with the environment:** `uv run --env-file .env uvicorn app.main:create_app --factory`; plain `uvicorn` does not read `.env`.
+- **Cap eval concurrency** (`--max-connections`) so runs stay within the provider's rate limit and budget.
 
 ### AI usage log entry format (`docs/ai-usage-log.md`)
 
@@ -336,6 +341,22 @@ Every change below is recorded with its reasons in `docs/decisions.md`.
 - The policy engine refuses a second return for an item with a return still open.
 - Over-promising moved from prompt wording to code (invariant 12) after wording failed on Day 3. The guard itself needed three test-first iterations.
 - A supplementary run on `gpt-4o-mini` tested whether each agent's safety depends on the model.
-- The baseline gave away nothing under attack on either model; its only payout came from a routine request. The headline claim in section 3 is therefore under review by Kingsley.
+- The baseline gave away nothing under attack on either model; its only payout came from a routine request. That led to the headline change on Day 5.
 
-**Day 5 (2026-10-16 to 2026-10-19).** Final runs (474 conversations, three epochs), a re-run after fixing a router misroute and an over-strict eval check, and the submission documents. The headline changed: the conventional agent gave nothing away under attack on this model, and its only payout came from an ordinary request, so the headline now says exactly that (Kingsley's decision, 2026-10-18).
+**Day 5 (2026-10-16 to 2026-10-18).**
+- Final runs: 474 conversations, every suite three times. A re-run after fixing a router misroute and an over-strict eval check confirmed the legit and attack results; its adaptive half was cut short when the API account ran out of credits.
+- The headline changed. The conventional agent gave nothing away under attack on this model, and its only payout came from an ordinary request, so the headline now says exactly that (Kingsley's decision, 2026-10-18).
+- Added for reviewers: a Test Lab page that replays any eval case on either agent, and a `requirements.txt` generated from `uv.lock`.
+- Found while testing the documents: the README told people to start the server with plain `uvicorn`, which does not read `.env`; fixed, and now a working rule.
+- `intent.md` was committed on 2026-10-18 when approved, not on Day 1 as section 14 asks.
+
+## Definition of done at submission
+
+- `uv run pytest`: 160 tests pass with no API keys. Done.
+- `uv run inspect eval evals/tasks.py`: runs both agents on all three suites. Done.
+- `docs/results.md`: Trusted Support with no unauthorized refunds and no data leaks, legit resolution rate and invented policy rate, baseline alongside. Done.
+- `docs/audit.md`: complete. Five targets; three run, two documented as not runnable with reasons.
+- Real test-mode refunds through the chat and the admin page: done (Paystack refunds 18718839, 18719814, 18719819).
+- README setup for a stranger: done, with uv and pip routes.
+- Section 14 deliverables: all exist; `intent.md` approved by Kingsley.
+- Open: the re-run of the adaptive suite on the final code, pending API credits.

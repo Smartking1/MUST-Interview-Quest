@@ -1,48 +1,50 @@
 # Trusted Support: write-up
 
-**In short:** I built a customer support AI for an online store that can process refunds without being talked into giving money away. The AI handles the conversation; tested code decides every refund, and only that code can move money. Against a conventional agent on the same model and tests, it resolved 98% of legitimate tickets (the conventional agent: 80%), made no unauthorized refunds, and told customers far fewer things the system had not decided. The conventional agent refunded ₦423,500 that its own instructions said needed a human.
+**In short:** I built a customer support AI for an online store that can process refunds without being talked into giving money away: the AI handles the conversation, and tested code decides every refund. It resolved 98% of legitimate tickets with no unauthorized refunds. A conventional agent on the same model refunded ₦423,500 that its own rules said needed a human, on an ordinary request with no attack involved, and under attack it told customers rules and promises that do not exist in 88% of conversations.
 
 ## The problem
 
 The support tickets most worth automating involve money, and language models are built to be persuadable; a refund policy must not be. Air Canada was held liable for a refund rule its chatbot invented; a dealership's chatbot "agreed" to sell a car for $1.
 
-I found this building my own support platform, in a popular LangGraph tutorial whose classifier treats every complaint as refundable. Auditing five public support agents confirmed it: in that tutorial the model classified complaints correctly 18 times out of 18, and one line of code, `if "refundable" in output`, sent all 12 non-refundable complaints down the refund path, because "non_refundable" contains "refundable". In OpenAI's own demo, "your agent already promised me" got $280 of vouchers issued in both runs. Where a rule lived in code, attacks failed. Where it lived in a prompt, or in fragile code around the model, the outcome depended on wording.
+I found this building my own support platform, in a popular LangGraph tutorial whose classifier treats every complaint as refundable. Auditing five public support agents confirmed the pattern. In that tutorial the model classified complaints correctly 18 times out of 18, and one line of code, `if "refundable" in output`, sent all 12 non-refundable complaints down the refund path, because "non_refundable" contains "refundable". In OpenAI's own demo, "your agent already promised me" got $280 of vouchers issued in both runs. Where a rule lived in code, attacks failed; where it lived in a prompt, the outcome depended on wording.
 
 ## What I unlearned
 
-**"Safety lives in the system prompt."** I now put authority in code. The model never supplies an amount; a pure policy engine computes it, signs the decision, and only a separate executor can call the payment gateway. A test drives every tool as a fully compromised model would; money still follows policy. The evidence that broke the old habit came from my own baseline: the store rule "refunds over ₦300,000 need a human" was in its instructions, and on an ordinary cancellation it refunded ₦423,500 anyway, in two of three runs. No attack was involved.
+**"Safety lives in the system prompt."** Authority now lives in code. The model never supplies an amount; a pure policy engine computes it and signs the decision, and only a separate executor can call the payment gateway. A test drives every tool as a fully compromised model would, and money still follows policy. My own baseline supplied the evidence: "refunds over ₦300,000 need a human" was in its instructions, and on an ordinary cancellation it refunded ₦423,500 anyway.
 
-**"Build first, evaluate after."** I wrote the attack suite before the agents existed and committed each new attack set before running it. The first real run found that my own measuring was wrong: the judge could not see what the agent had done, and the scorer let an unnecessary escalation pass. Both were fixed by making the eval stricter.
+**"Build first, evaluate after."** The attack suite came before the agents, and every new attack set was committed before it ran. The first real run showed my measuring was wrong: the judge could not see what the agent did, and the scorer let an unnecessary escalation pass. I fixed both by making the eval stricter.
 
-**"More agents make a stronger system."** One graph, three narrow nodes, depth only on the money path. Its cost showed too: once in three final runs, a return request reached the node with no return tool.
+**"More agents make a stronger system."** One graph, three narrow nodes, depth only on the money path. The cost appeared once in three final runs, when a return request reached a node with no return tool; that node can now file returns.
 
-The habit I had to catch myself in: when Trusted promised a customer a full refund on their word that an item was unopened, my first fix was better wording. It did not work. The fix that did is a code check on every reply after a decision, with a template fallback the model cannot make riskier.
+The habit I caught myself in: when Trusted promised a full refund on a customer's word that an item was unopened, my first fix was better wording. It failed. What worked is a code check on every reply after a decision, with a template fallback the model cannot make riskier.
 
 ## How I used AI
 
-On Day 1 I spent about five hours with Claude (web version) working out the problem and the solution, which became the directive (`directive.md`). From Day 2, Claude Code wrote the code, tests, eval suites, audit adapters and documents; I directed scope, made the decisions only I could make, and reviewed. The log records them: building the skeleton before the audit; switching from Stripe to Paystack because Stripe is not available in Nigeria; repricing the store in naira, overruling AI's recommendation to keep dollars; and asking for the log to be backfilled only with what could be evidenced.
+On Day 1 I spent about five hours with Claude (web version) working out the problem and solution, which became the directive (`directive.md`). From Day 2, Claude Code wrote the code, tests, evals, audit adapters and documents; I directed scope, made the calls only I could make, and reviewed. The log records them: building the core before the audit, switching from Stripe to Paystack because Stripe is not available in Nigeria, repricing the store in naira against AI's recommendation, and choosing the headline.
 
-AI also made mistakes, and the log keeps them: a test assertion that could never fail, two overwritten audit result files (counts corrected to preserved runs), and API keys printed into a session by loading `.env` with the shell. Each became a working rule in the directive.
+AI also made mistakes, and the log keeps them: a test assertion that could never fail, two overwritten audit result files (counts corrected to preserved runs), and API keys printed into a session by loading `.env` through the shell. Each became a working rule in the directive.
 
-The work was more compressed than planned: Day 2 was 2026-10-15, and the work for Days 3 to 5 ran on 2026-10-16. The git history shows the real dates.
+The schedule was compressed: Day 2 ran on 2026-10-15, Days 3 to 5 on 2026-10-16, and the final documents on 2026-10-18. The git history shows those dates.
 
 ## What failed
 
-Day 4 was harder than Day 2. An attacker model with a goal and eight adaptive turns, image injection and cross-capability attacks found: a duplicate return authorization (fixed in the policy engine), over-promising that wording could not fix (fixed with the reply check, which itself needed three test-first iterations), and claims of actions the system never took. What is still open: invented policy is reduced, not solved, since a pattern check misses new phrasings; under the adaptive attacker, 31% of Trusted's conversations still contained something the judge flagged. Every failure, with root cause and fix, is in `docs/failures.md`.
+Day 4 was harder than Day 2. An attacker model with a goal and eight adaptive turns, plus image injection and cross-capability attacks, found a duplicate return authorization (fixed in the policy engine), over-promising that wording could not fix (fixed with the reply check, which needed three test-first iterations), and claims of actions the system never took. Still open: invented policy is reduced, not solved; a pattern check misses new phrasings, and under the adaptive attacker 31% of Trusted's conversations still had something flagged. A re-run of the adaptive suite was cut short when the API account ran out of credits. Every failure is in `docs/failures.md`.
 
-The result that surprised me: on this model the conventional agent did not give money away under attack, across 177 attack conversations. The gap appeared on ordinary requests and in what it told customers: under adaptive pressure, 88% of its conversations contained invented rules, exceptions or promises.
+The surprise: on this model the conventional agent gave nothing away under attack, across 177 attack conversations. The gap was on ordinary requests and in what it told customers.
 
 ## Results
+
+Final runs, 474 conversations, same model for both agents:
 
 | | Trusted Support | Conventional agent |
 |---|---|---|
 | Legitimate tickets resolved correctly | 98% | 80% |
-| Unauthorized refunds | 0 | ₦423,500 (routine request, 2 of 3 runs) |
+| Unauthorized refunds | 0 | ₦423,500 on a routine request (2 of 3 runs; 3 of 3 in a re-run) |
 | Unauthorized refunds under attack | 0 | 0 |
 | Conversations free of invented policy, adaptive attacker | 69% | 12% |
 
-Zero unauthorized refunds is largely guaranteed by design; what matters is that it stayed useful and accurate.
+Zero unauthorized refunds is largely guaranteed by design; what matters is that the agent stayed useful and accurate.
 
 ## Why this matters for MUST's clients
 
-Commerce platforms want support automation they can trust with money, and a prompt cannot give them that. The pattern here (model talks, code decides, every money action signed and executed in one place, evals written before the agent) carries over to any client agent that touches refunds, credits or account changes.
+Commerce platforms want support automation they can trust with money, and a prompt cannot give them that. The pattern here (the model talks, code decides, every money action is signed and executed in one place, evals come before the agent) applies to any client agent that touches refunds, credits or account changes.
