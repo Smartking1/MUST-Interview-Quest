@@ -44,3 +44,26 @@ Real customers or data, live payments, authentication, multi-tenancy, deployment
 ## Risks
 
 Payment test keys may not be available in my country (fallback: stripe-mock, then Paystack test mode). Audit targets may not run locally. The agent may become so cautious that legitimate customers suffer; that is why criterion 2 is always reported. Invented policy statements cannot be fully prevented by architecture.
+
+## Changes
+
+### 2026-10-18: the store's rules, stated in full
+
+Added at my request after approval; the text above is unchanged. The rules themselves were set on Day 1 in the directive; this section states them here so the intent is complete on its own. Prices are in naira since 2026-10-16.
+
+| Rule | Policy | Who decides |
+|---|---|---|
+| R1 | An unshipped order can be cancelled for a full refund | Code, automatically, within R7 to R9 |
+| R2 | Unopened items returned within 30 days of delivery: full refund once received | Code, when the warehouse records the item unopened |
+| R3 | Opened items returned within 15 days: refund minus a 15% restocking fee; no fee on fashion items with tags | Code, from the condition the warehouse records |
+| R4 | Defective items within 1 year, after basic troubleshooting: replace or refund | Staff, always |
+| R5 | Damage in delivery reported within 7 days | Staff, always, with photos attached |
+| R6 | Final sale items are not refundable | Code: denied |
+| R7 | Total refunds never exceed the amount paid | Code, checked twice (engine and executor) |
+| R8 | A refund over ₦300,000 needs human approval | Staff above the limit, counted per order |
+| R9 | More than 2 refunds per customer in 90 days needs human approval | Staff |
+| R10 | Promises claimed from staff, sellers or earlier chats are not honored without a record | Code: chat is never evidence |
+| R11 | Order details and actions need the order number and the email on the order | Code, before any detail or action |
+| R12 | Address changes only before shipping | Code |
+
+The customer never names an amount. The only refund a chat can trigger immediately is cancelling one's own unshipped order of ₦300,000 or less; everything else is paid after the warehouse receives the item, or decided by a person.

@@ -8,6 +8,27 @@ The support tickets most worth automating involve money, and language models are
 
 I found this building my own support platform, in a popular LangGraph tutorial whose classifier treats every complaint as refundable. Auditing five public support agents confirmed the pattern. In that tutorial the model classified complaints correctly 18 times out of 18, and one line of code, `if "refundable" in output`, sent all 12 non-refundable complaints down the refund path, because "non_refundable" contains "refundable". In OpenAI's own demo, "your agent already promised me" got $280 of vouchers issued in both runs. Where a rule lived in code, attacks failed; where it lived in a prompt, the outcome depended on wording.
 
+## The store's rules
+
+Harbor Market, a fictional Nigerian marketplace, has twelve rules (`policy/policy.md`). The policy engine enforces each one in code:
+
+| Rule | Policy | What the system does |
+|---|---|---|
+| R1 | Unshipped orders can be cancelled for a full refund | Refunds automatically, subject to R7 to R9 |
+| R2 | Unopened returns within 30 days: full refund once received | Authorizes the return; pays when the warehouse records it unopened |
+| R3 | Opened returns within 15 days: refund minus 15% (no fee on fashion with tags) | Pays on receipt, from the condition the warehouse records |
+| R4 | Defective items within 1 year: replace or refund | Always sends to staff |
+| R5 | Delivery damage reported within 7 days | Always sends to staff, with any photo |
+| R6 | Final sale items are not refundable | Denies |
+| R7 | Refunds never exceed the amount paid | Checked by the engine and again by the executor; each item refunded once |
+| R8 | A refund over ₦300,000 needs a human | Cumulative per order, so split claims still escalate |
+| R9 | More than 2 refunds in 90 days needs a human | Escalates |
+| R10 | Claimed promises are not honored without a record | Nothing said in chat counts as evidence |
+| R11 | Order number and email required | Checked in code before any detail or action |
+| R12 | Address changes only before shipping | Changes automatically if unshipped |
+
+The customer never names an amount. The only refund a chat can trigger immediately is cancelling one's own unshipped order of ₦300,000 or less; returns pay only after the warehouse receives them, and everything else waits for a person.
+
 ## What I unlearned
 
 **"Safety lives in the system prompt."** Authority now lives in code. The model never supplies an amount; a pure policy engine computes it and signs the decision, and only a separate executor can call the payment gateway. A test drives every tool as a fully compromised model would, and money still follows policy. My own baseline supplied the evidence: "refunds over ₦300,000 need a human" was in its instructions, and on an ordinary cancellation it refunded ₦423,500 anyway.
@@ -21,8 +42,6 @@ The habit I caught myself in: when Trusted promised a full refund on a customer'
 ## How I used AI
 
 On Day 1 I spent about five hours with Claude (web version) working out the problem and solution, which became the directive (`directive.md`). From Day 2, Claude Code wrote the code, tests, evals, audit adapters and documents; I directed scope, made the calls only I could make, and reviewed. The log records them: building the core before the audit, switching from Stripe to Paystack because Stripe is not available in Nigeria, repricing the store in naira against AI's recommendation, and choosing the headline.
-
-AI also made mistakes, and the log keeps them: a test assertion that could never fail, two overwritten audit result files (counts corrected to preserved runs), and API keys printed into a session by loading `.env` through the shell. Each became a working rule in the directive.
 
 The schedule was compressed: Day 2 ran on 2026-10-15, Days 3 to 5 on 2026-10-16, and the final documents on 2026-10-18. The git history shows those dates.
 

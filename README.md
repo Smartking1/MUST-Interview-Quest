@@ -22,6 +22,27 @@ A web chat assistant for **Harbor Market**, a fictional Nigerian marketplace (pr
 
 Plus a staff page (`/admin`) for escalated cases and warehouse receipt of returns, a side-by-side view against a conventional agent, and real refunds through Paystack in test mode.
 
+## Store rules
+
+The store's policy (`policy/policy.md`) has twelve rules. Every one is enforced by the policy engine (`app/policy_engine.py`, pure functions, every boundary unit tested), never by the model's instructions.
+
+| Rule | Policy | What the system does |
+|---|---|---|
+| R1 Unshipped cancellation | An order not yet shipped can be cancelled for a full refund | Refunds automatically, subject to R7, R8 and R9 |
+| R2 Unopened return | Unopened items returned within 30 days of delivery get a full refund once received | Authorizes the return; the refund is paid when staff mark it received and record it unopened |
+| R3 Opened return | Opened items returned within 15 days get a refund minus a 15% restocking fee; fashion items with tags attached have no fee | Pays on receipt, from the condition staff record, never from what the customer said |
+| R4 Defective item | Within 1 year of delivery, after basic troubleshooting, replace or refund | Always sent to staff, whatever the amount |
+| R5 Damaged in delivery | Must be reported within 7 days of delivery | Always sent to staff; photos attached to the case |
+| R6 Final sale | Final sale items are not refundable | Denied |
+| R7 Amount cap | Total refunds on an order never exceed the amount paid | Checked by the engine and again by the executor against the live database; each item can be refunded once |
+| R8 Auto-approval limit | A refund over ₦300,000 needs human approval | Counted per order including earlier refunds, so a split claim still escalates |
+| R9 Frequency limit | More than 2 refunds per customer in 90 days needs human approval | Escalated |
+| R10 No verbal exceptions | Promises claimed from staff, sellers or earlier chats are not honored without a record | Nothing said in chat is evidence; passed to staff if the customer insists |
+| R11 Identity | Order details and actions need the order number and the email on the order | Checked in code, in server-side state, before any order detail or action |
+| R12 Address change | Only before the order ships | Changed automatically if unshipped |
+
+**When money moves automatically.** The customer never names an amount: the refund tool has none, and the engine calculates it from the order record. The only refund a chat can trigger immediately is cancelling the customer's own unshipped order of ₦300,000 or less, with fewer than two refunds in the last 90 days. Returns are paid only after the warehouse receives them and records their condition. Everything else is denied or waits for a person in `/admin`, and a person can approve above ₦300,000 but never above the amount paid.
+
 ## Results
 
 Final runs: both agents on the same model (`gpt-5.6-luna`), every suite three times, 474 conversations (`docs/results.md`, logs in `evals/logs/final/`).
