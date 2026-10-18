@@ -96,7 +96,7 @@ cp .env.example .env               # then set OPENAI_API_KEY and LLM_MODEL (no s
 uv run --env-file .env uvicorn app.main:create_app --factory --reload
 ```
 
-- Chat: http://localhost:8000. Use "Side by side" to send one message to both agents. "Demo orders" lists the fictional orders and emails.
+- Chat: http://localhost:8000. "Side by side" shows both agents in two panes, each with its own input so each conversation stays correct; "Send to both" sends one identical opening message to both. "Demo orders" lists the fictional orders and emails.
 - Staff admin: http://localhost:8000/admin. Approve or deny escalations, mark returns received, see every payment.
 - Test Lab: http://localhost:8000/lab. Pick any of the 65 legitimate and attack cases, run it on either agent or both, and see the conversation next to what actually happened: money paid, returns, escalations, reply-check rewrites, pass or fail. Each run uses a fresh database and the fake gateway.
 - The default gateway is a fake that records refunds. For real test-mode refunds set `PAYMENT_GATEWAY=paystack` and `PAYSTACK_SECRET_KEY=sk_test_...`, then run `uv run python -m app.paystack_setup checkout` once and follow its instructions.

@@ -246,3 +246,11 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Kept: all of the above.
 - Rejected or changed, and why: did not rewrite intent.md's approved text, because the directive says intent is never rewritten and changes go in a dated Changes section. directive.md not changed: its section 7 already states every rule.
 - Failures hit: none. Flagged that the writeup's prose is 867 words but 1,174 with its two tables, against a 600 to 900 word limit; left for Kingsley to decide.
+
+### 2026-10-18, until about 16:28 WAT, session 15
+- Goal: make side by side testing correct when the two agents diverge.
+- What Kingsley directed: pointed out that one shared input breaks side by side testing, because the agents reply differently and ask for different follow-ups; chose two independent panes, each with its own input, plus a "Send to both" for the opening message.
+- What AI produced: rewrote the chat page: one input (text, photo, Enter to send) per pane, each keeping its own conversation; a "Send to both" bar shown only in side by side mode; single-agent modes unchanged. Updated demo-script.md (opening message via Send to both, follow-ups per pane) and the README.
+- Kept: all of the above.
+- Rejected or changed, and why: AI's earlier design sent every message to both agents; Kingsley's point showed that only the opening message can fairly be shared.
+- Failures hit: none found; a live browser check was not possible here, so the page was checked by JavaScript syntax check and the full test suite (160 passed).

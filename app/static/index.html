@@ -15,8 +15,9 @@
   .modes button:first-child { border-radius:6px 0 0 6px; } .modes button:last-child { border-radius:0 6px 6px 0; }
   .modes button.on { background:var(--ink); color:#fff; border-color:var(--ink); }
   header a { color:var(--muted); }
-  main { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:16px 20px; height:calc(100vh - 140px); }
-  main.single { grid-template-columns:1fr; }
+  details { padding:8px 20px 0; color:var(--muted); font-size:13px; }
+  main { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:12px 20px; height:calc(100vh - 150px); }
+  main.single { grid-template-columns:1fr; height:calc(100vh - 110px); }
   .pane { background:var(--panel); border:1px solid var(--line); border-radius:10px; display:flex; flex-direction:column; min-height:0; }
   .pane[hidden] { display:none; }
   .pane h2 { margin:0; padding:10px 14px; font-size:14px; border-bottom:1px solid var(--line); }
@@ -26,13 +27,22 @@
   .msg.user { background:var(--user); align-self:flex-end; }
   .msg.bot { background:var(--bot); align-self:flex-start; }
   .msg.err { background:#fde8e8; color:var(--unsafe); }
-  form { display:flex; gap:8px; padding:0 20px 16px; }
-  textarea { flex:1; font:inherit; padding:10px; border:1px solid var(--line); border-radius:8px; resize:none; height:52px; }
-  form button { padding:0 18px; font:inherit; border:0; border-radius:8px; background:var(--ink); color:#fff; cursor:pointer; }
-  details { padding:0 20px 8px; color:var(--muted); font-size:13px; }
-  .photo { display:flex; align-items:center; padding:0 12px; border:1px solid var(--line); border-radius:8px; cursor:pointer; color:var(--muted); background:#fff; }
-  .photo-name { padding:0 20px 10px; color:var(--muted); font-size:13px; min-height:1em; }
-  @media (max-width: 760px) { main { grid-template-columns:1fr; height:auto; } .log { min-height:280px; } }
+  .msg.note { align-self:center; background:none; color:var(--muted); font-size:12px; padding:0; }
+  .composer { border-top:1px solid var(--line); padding:10px; }
+  .composer form { display:flex; gap:8px; }
+  .composer textarea { flex:1; font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:8px; resize:none; height:46px; }
+  .composer button { padding:0 16px; font:inherit; border:0; border-radius:8px; background:var(--ink); color:#fff; cursor:pointer; }
+  .photo { display:flex; align-items:center; padding:0 10px; border:1px solid var(--line); border-radius:8px; cursor:pointer; color:var(--muted); background:#fff; font-size:14px; }
+  .photo-name { color:var(--muted); font-size:12px; min-height:1em; margin-top:4px; }
+  .both { margin:0 20px 14px; background:var(--panel); border:1px dashed var(--muted); border-radius:10px; }
+  .both[hidden] { display:none; }
+  .both .label { font-size:12px; color:var(--muted); padding:8px 10px 0; }
+  .both button { background:var(--muted); }
+  @media (max-width: 760px) {
+    main, main.single { grid-template-columns:1fr; height:auto; }
+    .log { min-height:260px; }
+    .both { margin:0 16px 14px; }
+  }
 </style>
 </head>
 <body>
@@ -43,36 +53,43 @@
     <button data-mode="both">Side by side</button>
     <button data-mode="baseline">Baseline (unsafe)</button>
   </div>
-  <button id="reset" title="New conversation">New chat</button>
+  <button id="reset" title="Start new conversations">New chat</button>
   <a href="/admin">Staff admin</a>
   <a href="/lab">Test Lab</a>
 </header>
 <details><summary>Demo orders (fictional)</summary><div id="orders"></div></details>
 <main id="main" class="single">
-  <section class="pane trusted"><h2>Trusted Support</h2><div class="log" id="log-trusted"></div></section>
-  <section class="pane baseline" hidden><h2>Baseline: conventional agent, unsafe, for comparison only</h2><div class="log" id="log-baseline"></div></section>
+  <section class="pane trusted" data-agent="trusted">
+    <h2>Trusted Support</h2>
+    <div class="log" id="log-trusted"></div>
+    <div class="composer" id="composer-trusted"></div>
+  </section>
+  <section class="pane baseline" data-agent="baseline" hidden>
+    <h2>Baseline: conventional agent, unsafe, for comparison only</h2>
+    <div class="log" id="log-baseline"></div>
+    <div class="composer" id="composer-baseline"></div>
+  </section>
 </main>
-<form id="form">
-  <label class="photo" title="Attach a photo (JPEG, PNG or WebP, up to 5 MB)">Photo<input type="file" id="photo" accept="image/jpeg,image/png,image/webp" hidden></label>
-  <textarea id="input" placeholder="Type a message. Include your order number and email for order help." required></textarea>
-  <button>Send</button>
-</form>
-<div id="photo-name" class="photo-name"></div>
+<div class="both composer" id="composer-both" hidden>
+  <div class="label">Send to both: use this for the opening message, so both agents get the identical request. Then reply to each one in its own pane.</div>
+</div>
 <script>
+const AGENTS = ["trusted", "baseline"];
 const state = { mode: "trusted", ids: { trusted: null, baseline: null } };
-const panes = { trusted: document.querySelector(".pane.trusted"), baseline: document.querySelector(".pane.baseline") };
+const $ = id => document.getElementById(id);
 
 function setMode(mode) {
   state.mode = mode;
   document.querySelectorAll(".modes button").forEach(b => b.classList.toggle("on", b.dataset.mode === mode));
-  panes.trusted.hidden = mode === "baseline";
-  panes.baseline.hidden = mode === "trusted";
-  document.getElementById("main").classList.toggle("single", mode !== "both");
+  document.querySelector(".pane.trusted").hidden = mode === "baseline";
+  document.querySelector(".pane.baseline").hidden = mode === "trusted";
+  $("main").classList.toggle("single", mode !== "both");
+  $("composer-both").hidden = mode !== "both";
 }
 document.querySelectorAll(".modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
 
 function add(agent, cls, text) {
-  const log = document.getElementById("log-" + agent);
+  const log = $("log-" + agent);
   const el = document.createElement("div");
   el.className = "msg " + cls;
   el.textContent = text;
@@ -80,18 +97,6 @@ function add(agent, cls, text) {
   log.scrollTop = log.scrollHeight;
   return el;
 }
-
-let photo = null;  // { base64, mime, name }
-document.getElementById("photo").onchange = e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    photo = { base64: reader.result.split(",")[1], mime: file.type, name: file.name };
-    document.getElementById("photo-name").textContent = "Attached: " + file.name + " (sent with your next message)";
-  };
-  reader.readAsDataURL(file);
-};
 
 async function send(agent, message, image) {
   add(agent, "user", image ? message + "\n[photo: " + image.name + "]" : message);
@@ -110,31 +115,59 @@ async function send(agent, message, image) {
   }
 }
 
-document.getElementById("form").onsubmit = e => {
-  e.preventDefault();
-  const input = document.getElementById("input");
-  const message = input.value.trim();
-  if (!message) return;
-  input.value = "";
-  const agents = state.mode === "both" ? ["trusted", "baseline"] : [state.mode];
-  const image = photo;
-  photo = null;
-  document.getElementById("photo").value = "";
-  document.getElementById("photo-name").textContent = "";
-  agents.forEach(a => send(a, message, image));
-};
-document.getElementById("input").addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); document.getElementById("form").requestSubmit(); }
-});
-document.getElementById("reset").onclick = () => {
+// One input box: text, optional photo, Enter to send. `targets` returns which agents receive the message.
+function makeComposer(container, placeholder, buttonText, targets) {
+  let photo = null;
+  const form = document.createElement("form");
+  const label = document.createElement("label");
+  label.className = "photo"; label.title = "Attach a photo (JPEG, PNG or WebP, up to 5 MB)"; label.textContent = "Photo";
+  const file = document.createElement("input");
+  file.type = "file"; file.accept = "image/jpeg,image/png,image/webp"; file.hidden = true;
+  label.appendChild(file);
+  const input = document.createElement("textarea");
+  input.placeholder = placeholder; input.required = true;
+  const button = document.createElement("button");
+  button.textContent = buttonText;
+  const note = document.createElement("div");
+  note.className = "photo-name";
+  form.append(label, input, button);
+  container.append(form, note);
+
+  file.onchange = () => {
+    const f = file.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      photo = { base64: reader.result.split(",")[1], mime: f.type, name: f.name };
+      note.textContent = "Attached: " + f.name + " (sent with the next message)";
+    };
+    reader.readAsDataURL(f);
+  };
+  form.onsubmit = e => {
+    e.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+    const image = photo;
+    input.value = ""; photo = null; file.value = ""; note.textContent = "";
+    targets().forEach(agent => send(agent, message, image));
+  };
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+}
+
+makeComposer($("composer-trusted"), "Message Trusted Support. Include your order number and email for order help.", "Send", () => ["trusted"]);
+makeComposer($("composer-baseline"), "Message the baseline agent.", "Send", () => ["baseline"]);
+makeComposer($("composer-both"), "Opening message for both agents.", "Send to both", () => AGENTS);
+
+$("reset").onclick = () => {
   state.ids = { trusted: null, baseline: null };
-  document.querySelectorAll(".log").forEach(l => l.innerHTML = "");
+  AGENTS.forEach(a => { $("log-" + a).innerHTML = ""; add(a, "note", "New conversation"); });
 };
 
 fetch("/api/demo/customers").then(r => r.json()).then(rows => {
-  document.getElementById("orders").textContent =
-    rows.map(r => `${r.order_number}  ${r.email}  (${r.status})`).join("\n");
-  document.getElementById("orders").style.whiteSpace = "pre";
+  $("orders").textContent = rows.map(r => `${r.order_number}  ${r.email}  (${r.status})`).join("\n");
+  $("orders").style.whiteSpace = "pre";
 }).catch(() => {});
 </script>
 </body>
