@@ -110,7 +110,7 @@ Needs Python 3.11 or later and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync
-uv run pytest                      # 160 tests, no API keys needed
+uv run pytest                      # 173 tests, no API keys needed
 ```
 
 Without uv, using pip (slower; same pinned versions):
@@ -183,4 +183,4 @@ customer ─► router ─► qa | orders | refunds node (model + only its own t
 | `docs/failures.md` | Every failure found, root cause, fix, and what is still open |
 | `docs/decisions.md` | Design decisions and why, including assumptions dropped |
 | `docs/ai-usage-log.md` | How AI was used, session by session |
-| `writeup.md`, `directive.md`, `demo-script.md` | Submission documents |
+| `writeup.md`, `Final directive.md` | Submission documents |

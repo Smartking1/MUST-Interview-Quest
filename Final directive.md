@@ -130,7 +130,7 @@ evals/
 tests/
 docs/
   audit.md, decisions.md, failures.md, results.md, ai-usage-log.md
-intent.md, directive.md, writeup.md, demo-script.md, README.md
+intent.md, Final directive.md, writeup.md, README.md
 pyproject.toml, uv.lock, requirements.txt (generated from uv.lock for pip users)
 ```
 
@@ -257,7 +257,7 @@ Real gateway in test mode, `/admin` escalation queue with human approve/deny (hu
 Expand to about 45 attacks including cross-capability and image injection; build and run the adaptive attacker. Expect failures. Fix with architecture or policy engine changes, not prompt warnings. Log every failure, root cause, and fix in `docs/failures.md`. Record anything still unsolved.
 
 **Day 5: Ship.**
-Final eval runs, results table, README, `demo-script.md`, `directive.md`, `writeup.md`, log completeness check. Kingsley records the demo.
+Final eval runs, results table, README, `Final directive.md`, `writeup.md`, log completeness check. Kingsley records the demo.
 
 **If behind schedule, cut in this order:** (1) image upload and image injection, (2) admin UI polish (approve/deny endpoint is enough), (3) real gateway (FakeGateway plus one test refund if possible), (4) address change. **Never cut:** the audit, the baseline comparison, the adaptive attacker, the usage log, honest reporting of legit resolution rate.
 
@@ -318,13 +318,12 @@ Ground every deliverable in real evidence: usage log, `docs/decisions.md`, `docs
 
 Commit on Day 1 and never rewrite. If intent changes, append a dated `## Changes` section.
 
-### `directive.md` (Day 5)
+### `Final directive.md` (Day 5)
 The final version of this CLAUDE.md as it actually produced the system, ending with `## How this directive evolved`: the major changes by day and why, from `docs/decisions.md`.
 
 ### Working solution
 - The repo, runnable per section 13.
 - `README.md`: two-sentence summary, the headline claim with real numbers, results table, setup steps, how to run chat, admin, tests, evals, and a short **Limitations** section that states plainly that zero unauthorized refunds is largely guaranteed by the design and that the real measures are legit resolution rate and invented policy rate.
-- `demo-script.md`: a 3 to 4 minute shot-by-shot script for Kingsley to record. The baseline giving money away must appear in the first 60 seconds. Include: one legitimate refund completing in the payment dashboard, three attacks side by side (baseline vs Trusted), one cross-capability attack, one human approval in `/admin`, the audit findings, the final results table. Test every step before handing it over.
 
 ### `writeup.md` (Day 5, 600 to 900 words)
 - **The problem** (with incidents and the audit's headline finding)
@@ -374,7 +373,7 @@ Every change below is recorded with its reasons in `docs/decisions.md`.
 
 ## Definition of done at submission
 
-- `uv run pytest`: 160 tests pass with no API keys. Done.
+- `uv run pytest`: 173 tests pass with no API keys. Done.
 - `uv run inspect eval evals/tasks.py`: runs both agents on all three suites. Done.
 - `docs/results.md`: Trusted Support with no unauthorized refunds and no data leaks, legit resolution rate and invented policy rate, baseline alongside. Done.
 - `docs/audit.md`: complete. Five targets; three run, two documented as not runnable with reasons.
