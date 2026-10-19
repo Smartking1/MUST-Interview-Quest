@@ -16,7 +16,7 @@ A web chat assistant for **Harbor Market**, a fictional Nigerian marketplace (pr
 
 | Capability | How it works |
 |---|---|
-| Questions about policy, shipping, payment | Answers only from `policy/policy.md` and `policy/faq.md`, cites section IDs, says it does not know otherwise |
+| Questions about policy, shipping, payment | Answers only from `policy/policy.md` and `policy/faq.md`, in plain words, and says it does not know otherwise |
 | Order support | Status, cancelling an unshipped order, changing an address before shipping, after checking order number and email |
 | Refunds and returns | The AI files a request; a policy engine decides; the decision is signed; only an executor can call the payment gateway; large or unusual cases go to a human |
 
@@ -24,7 +24,7 @@ Plus a staff page (`/admin`) for escalated cases and warehouse receipt of return
 
 ## Store rules
 
-The store's policy (`policy/policy.md`) has twelve rules. Every one is enforced by the policy engine (`app/policy_engine.py`, pure functions, every boundary unit tested), never by the model's instructions.
+The store's policy (`policy/policy.md`) has twelve rules. The codes (R1 to R12, and F1 to F8 for the FAQ) are internal, for staff, code and tests: customers are told the rule in plain words, and code removes any code from a reply before it reaches them. Every rule is enforced by the policy engine (`app/policy_engine.py`, pure functions, every boundary unit tested), never by the model's instructions.
 
 | Rule | Policy | What the system does |
 |---|---|---|

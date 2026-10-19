@@ -18,6 +18,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.attachments import save_upload
+from app.customer_text import hide_rule_codes
 from app.executor import Executor
 from app.llm import chat_model
 from app import reply_guard
@@ -33,7 +34,7 @@ Use the recent conversation for context, for example a "yes" confirming a cancel
 
 BASE_PROMPT = """You are the customer support assistant for Harbor Market, an online marketplace selling electronics, fashion and home goods from multiple sellers.
 
-Be warm, brief and plain. Cite policy section IDs (for example R2) when you explain a rule.
+Be warm, brief and plain. Explain rules in plain words. Never mention rule or section codes such as R2 or F7: they are internal and customers do not see them.
 Only state policy that a tool returned to you. If the policy does not cover something, say you don't know and offer to pass it to staff.
 Report outcomes exactly as tools return them. Never say a refund, replacement or exception will happen unless a tool has done it.
 Never discuss orders or details of anyone other than the verified customer.
@@ -133,4 +134,4 @@ class TrustedAgent:
         new.append(HumanMessage(message))
         result = await self.graph.ainvoke({"messages": self.messages + new}, {"recursion_limit": 25})
         self.messages = result["messages"]
-        return self.messages[-1].text
+        return hide_rule_codes(self.messages[-1].text)

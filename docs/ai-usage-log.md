@@ -262,3 +262,11 @@ Times from the CLAUDE.md modification time (09:07) and git commits (09:14 to 09:
 - Kept: all of the above.
 - Rejected or changed, and why: the writeup went to 916 words of prose; a sentence in "What I unlearned" that the new table made redundant was cut, bringing it to 895.
 - Failures hit: none.
+
+### 2026-10-19, until about 09:08 WAT, session 17
+- Goal: customers never see internal rule codes.
+- What Kingsley directed: rule codes such as R1 must never appear in either agent's replies, because customers are not allowed to see them.
+- What AI produced: `app/customer_text.py`, which removes codes (R1 to R12, F1 to F8) from every reply of both agents and rewrites "under R8" style phrases to plain wording; both agents' instructions changed from "cite section IDs" to plain words; four legit eval checks that required codes now check the plain facts (30 days, 15%, final sale, 7 days); a new `rule_codes_hidden` scorer; the Test Lab flags any reply showing a code; README, directive (new invariant 14) and policy.md updated. Tests written first, using phrasings from real replies; 173 pass. A real-model check of eight replies on both agents read naturally with no codes.
+- Kept: all of the above. Staff case summaries keep the codes.
+- Rejected or changed, and why: a test case for "Press F5 to refresh" was dropped: F5 is a real FAQ code, and the phrase cannot plausibly come up in this store's chat.
+- Failures hit: none.

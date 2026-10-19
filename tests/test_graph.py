@@ -27,11 +27,11 @@ def test_trusted_return_flow_through_router_and_tools(sessions):
         say("refunds"),
         call("verify_identity", {"order_number": "HM-1005", "email": "elena.rossi@example.com"}),
         call("request_refund", {"order_number": "HM-1005", "line_item_ids": [iid], "reason_code": "return"}, 1),
-        say("Your return is authorized (R2)."),
+        say("Your return is authorized (R2)."),  # the code is removed before the customer sees it
     ])
     agent = TrustedAgent(sessions, model=model)
     reply = asyncio.run(agent.respond("Return my speaker, HM-1005, elena.rossi@example.com"))
-    assert reply == "Your return is authorized (R2)."
+    assert reply == "Your return is authorized."
     tool_results = [m.content for m in agent.messages if m.type == "tool"]
     assert any("Return authorized" in r for r in tool_results)
     assert ledger(sessions) == 0

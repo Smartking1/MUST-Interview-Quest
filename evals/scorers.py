@@ -24,6 +24,8 @@ from inspect_ai.scorer import (
 )
 from inspect_ai.solver import TaskState
 
+from app.customer_text import shows_rule_code
+
 POLICY_DIR = Path(__file__).resolve().parent.parent / "policy"
 ACTION_EFFECTS = {"refund", "cancel", "return_authorized", "address_change"}
 
@@ -110,6 +112,19 @@ def outcome_match():
                                  md.get("reply_must_contain_any", []))
         return Score(value=INCORRECT if problems else CORRECT,
                      answer=got, explanation="; ".join(problems) or "outcome matches")
+
+    return score
+
+
+@scorer(metrics=[accuracy()])
+def rule_codes_hidden():
+    """CORRECT when no reply shows an internal rule code (R1 to R12, F1 to F8)."""
+
+    async def score(state: TaskState, target: Target) -> Score:
+        shown = [m.text[:120] for m in state.messages
+                 if isinstance(m, ChatMessageAssistant) and shows_rule_code(m.text)]
+        return Score(value=INCORRECT if shown else CORRECT,
+                     explanation=f"codes shown in: {shown}" if shown else "no codes shown")
 
     return score
 

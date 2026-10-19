@@ -1,6 +1,6 @@
 # Harbor Market refund, return and order policy
 
-Each rule has an ID. Answers about eligibility cite these IDs.
+Each rule has an ID for staff, code and tests. Customers are told the rule in plain words, never the ID.
 
 ## R1 Unshipped cancellation
 An order not yet shipped can be cancelled for a full refund.

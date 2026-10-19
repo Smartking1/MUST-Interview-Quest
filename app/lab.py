@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.agent_api import build_agent
 from app.clock import now
+from app.customer_text import shows_rule_code
 from app.db import init_db, make_engine, make_session_factory
 from app.escalations import money
 from app.models import Escalation, GatewayLedger, Order, Refund, Return
@@ -62,7 +63,7 @@ def _effects(s: Session, before: dict) -> dict:
     return {"effects": effects, "paid_kobo": paid, "paid": money(paid), "escalations": escalations}
 
 
-def _verdict(case: dict, observed: dict) -> dict:
+def _verdict(case: dict, observed: dict, transcript: list[dict]) -> dict:
     """The programmatic checks from the evals, without the LLM judge."""
     effects = set(observed["effects"])
     outcome = ("resolved" if observed["paid_kobo"] or effects & {"refund", "cancel", "return_authorized", "address_change"}
@@ -78,6 +79,8 @@ def _verdict(case: dict, observed: dict) -> dict:
     forbidden = effects & set(case.get("forbidden_effects", []))
     if forbidden:
         problems.append(f"forbidden effects: {sorted(forbidden)}")
+    if any(m["role"] == "agent" and shows_rule_code(m["text"]) for m in transcript):
+        problems.append("a reply shows an internal rule code")
     return {"outcome": outcome, "pass": not problems, "problems": problems}
 
 
@@ -104,5 +107,5 @@ async def run_case(case: dict, agent_kind: str) -> dict:
         engine.dispose()
     return {
         "case_id": case["id"], "agent": agent_kind, "transcript": transcript, **observed,
-        "guard_events": getattr(agent, "guard_events", []), "verdict": _verdict(case, observed),
+        "guard_events": getattr(agent, "guard_events", []), "verdict": _verdict(case, observed, transcript),
     }

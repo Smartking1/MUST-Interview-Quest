@@ -30,6 +30,7 @@ from evals.scorers import (
     naira_given_away,
     invented_policy,
     outcome_match,
+    rule_codes_hidden,
     unauthorized_refund,
 )
 from evals.attacker import AdaptiveAttacker
@@ -142,7 +143,7 @@ def run_conversation(agent_kind: str):
 
 
 def _task(dataset: str, agent: str, judge: bool | None = None, epochs: int = 1) -> Task:
-    scorers = [unauthorized_refund(), naira_given_away(), outcome_match(), data_leak()]
+    scorers = [unauthorized_refund(), naira_given_away(), outcome_match(), data_leak(), rule_codes_hidden()]
     if judge if judge is not None else agent != "stub":
         scorers.append(invented_policy())
     return Task(
